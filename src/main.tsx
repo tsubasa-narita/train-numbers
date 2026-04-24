@@ -4,7 +4,7 @@ import './styles.css';
 
 type Tab = 'home' | 'practice' | 'reward';
 type Mode = 'level1' | 'level2' | 'level3' | 'practice';
-type Pattern = 'carCount' | 'trainCount' | 'numberMatch';
+type Pattern = 'trainCount';
 
 type Progress = {
   totalStars: number;
@@ -23,6 +23,7 @@ type Question = {
   choices: number[];
   prompt: string;
   hint: string;
+  imageUrl: string;
   trainTone: string;
 };
 
@@ -37,6 +38,7 @@ type QuizState = {
 
 const STORAGE_KEY = 'ressha_kazu_progress';
 const ASSET_SHEET = `${import.meta.env.BASE_URL}images/ui/train-assets.png`;
+const quizImageUrl = (count: number) => `${import.meta.env.BASE_URL}images/quiz/train-count-${String(count).padStart(2, '0')}.png`;
 
 const TRAIN_NAMES = [
   'きいろい しんかんせん',
@@ -141,17 +143,14 @@ function pick<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-function questionText(pattern: Pattern, n: number) {
-  if (pattern === 'carCount') return 'この でんしゃは なんりょう?';
-  if (pattern === 'trainCount') return 'でんしゃは なんほん いる?';
-  return `${n}と おなじ かずは どれ?`;
+function questionText() {
+  return 'でんしゃは なんほん いる?';
 }
 
 function generateQuestions(mode: Mode): Question[] {
   const range = rangeForMode(mode);
-  const patterns: Pattern[] = shuffle(['carCount', 'trainCount', 'numberMatch']);
   return Array.from({ length: 3 }, (_, index) => {
-    const pattern = patterns[index % patterns.length];
+    const pattern: Pattern = 'trainCount';
     const correctNum = pick(range);
     const wrongPool = range.filter((n) => n !== correctNum);
     const choices = shuffle([correctNum, ...shuffle(wrongPool).slice(0, 2)]);
@@ -160,8 +159,9 @@ function generateQuestions(mode: Mode): Question[] {
       pattern,
       correctNum,
       choices,
-      prompt: questionText(pattern, correctNum),
-      hint: pattern === 'carCount' ? 'しゃりょうを 1りょうずつ かぞえよう' : pattern === 'trainCount' ? 'えの なかの でんしゃを ぜんぶ みつけよう' : 'でんしゃの かずを くらべて えらぼう',
+      prompt: questionText(),
+      hint: 'しゃしんの なかの でんしゃを ぜんぶ かぞえよう',
+      imageUrl: quizImageUrl(correctNum),
       trainTone: pick(TRAIN_TONES),
     };
   });
@@ -322,18 +322,18 @@ function Home({ progress, onStart }: { progress: Progress; onStart: (mode: Mode)
         <img src={ASSET_SHEET} alt="" className="asset-preview" />
       </div>
       <ConductorBubble text="どの かずで あそぶ?" />
-      <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} onClick={() => onStart('level1')} />
-      <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} onClick={() => onStart('level2')} />
-      <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} onClick={() => onStart('level3')} />
+      <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} imageNum={1} onClick={() => onStart('level1')} />
+      <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} imageNum={4} onClick={() => onStart('level2')} />
+      <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} imageNum={7} onClick={() => onStart('level3')} />
       <p className="mini">これまでの ごほうび: ⭐ {progress.totalStars}こ</p>
     </div>
   );
 }
 
-function LevelCard({ tone, title, subtitle, nums, onClick }: { tone: string; title: string; subtitle: string; nums: number[]; onClick: () => void }) {
+function LevelCard({ tone, title, subtitle, nums, imageNum, onClick }: { tone: string; title: string; subtitle: string; nums: number[]; imageNum: number; onClick: () => void }) {
   return (
     <button className={`level-card ${tone}`} onClick={onClick}>
-      <TrainLine count={Math.min(nums.length + 1, 5)} tone={tone} compact />
+      <img className="level-thumb" src={quizImageUrl(imageNum)} alt="" />
       <span className="level-text">
         <strong>{title}</strong>
         <small>{subtitle}</small>
@@ -367,10 +367,10 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound }: { quiz: QuizState; onAns
         <strong>{q.prompt}</strong>
       </button>
       <VisualQuestion question={q} />
-      <div className={q.pattern === 'numberMatch' ? 'choice-grid image-choices' : 'choice-grid'}>
+      <div className="choice-grid">
         {q.choices.map((choice) => (
           <button key={choice} className={choiceClass(quiz, choice)} onClick={() => onAnswer(choice)}>
-            {q.pattern === 'numberMatch' ? <TrainGroup count={choice} tone={q.trainTone} tiny /> : choice}
+            {choice}
           </button>
         ))}
       </div>
@@ -381,10 +381,11 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound }: { quiz: QuizState; onAns
 }
 
 function VisualQuestion({ question }: { question: Question }) {
-  if (question.pattern === 'carCount') {
-    return <div className="visual"><TrainLine count={question.correctNum} tone={question.trainTone} /></div>;
-  }
-  return <div className="visual"><TrainGroup count={question.correctNum} tone={question.trainTone} /></div>;
+  return (
+    <div className="visual photo-visual">
+      <img src={question.imageUrl} alt={`${question.correctNum}ほんの でんしゃ`} />
+    </div>
+  );
 }
 
 function TrainLine({ count, tone, compact = false }: { count: number; tone: string; compact?: boolean }) {
