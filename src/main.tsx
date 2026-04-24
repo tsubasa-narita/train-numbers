@@ -36,7 +36,7 @@ type QuizState = {
 };
 
 const STORAGE_KEY = 'ressha_kazu_progress';
-const ASSET_SHEET = '/images/ui/train-assets.png';
+const ASSET_SHEET = `${import.meta.env.BASE_URL}images/ui/train-assets.png`;
 
 const TRAIN_NAMES = [
   'きいろい しんかんせん',
