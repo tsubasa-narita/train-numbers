@@ -39,10 +39,18 @@ type QuizState = {
 const STORAGE_KEY = 'ressha_kazu_progress';
 const HOME_BACKGROUND = `${import.meta.env.BASE_URL}images/ui/home-background.png`;
 const CONDUCTOR_BOY = `${import.meta.env.BASE_URL}images/ui/conductor-boy-home.png`;
+const REWARD_GIFT = `${import.meta.env.BASE_URL}images/ui/reward-train-gift.png`;
 const trainImageUrl = (filename: string) => `${import.meta.env.BASE_URL}images/trains/${filename}`;
 const TRAIN_NAMES = QUIZ_TRAINS.map((train) => train.displayName);
 
 const TRAIN_TONES = ['yellow', 'green', 'blue', 'red', 'teal', 'orange', 'silver', 'purple'];
+const REWARD_CARD_SIZE = 10;
+const REWARD_CARDS = [
+  { title: 'かがやき', image: `${import.meta.env.BASE_URL}images/ui/reward-card-kagayaki.png` },
+  { title: 'さいきょうせん', image: `${import.meta.env.BASE_URL}images/ui/reward-card-saikyo.png` },
+  { title: 'よこすかせん', image: `${import.meta.env.BASE_URL}images/ui/reward-card-yokosuka.png` },
+  { title: 'しょうなんしんじゅく', image: `${import.meta.env.BASE_URL}images/ui/reward-card-shonan-shinjuku.png` },
+];
 
 function defaultProgress(): Progress {
   const now = new Date().toISOString();
@@ -158,8 +166,11 @@ function unlockedIds(totalStars: number) {
 }
 
 function completeSession(progress: Progress, quiz: QuizState): Progress {
-  const stars = quiz.missed.filter(Boolean).length === 0 ? 3 : quiz.missed.filter(Boolean).length <= 2 ? 2 : 1;
-  const nextStars = progress.totalStars + stars;
+  const missed = quiz.missed.filter(Boolean).length;
+  const resultStars = missed === 0 ? 3 : missed <= 2 ? 2 : 1;
+  const earnedRewardStars = missed === 0 ? 1 : 0;
+  const correctCount = quiz.questions.length - missed;
+  const nextStars = progress.totalStars + earnedRewardStars;
   const next: Progress = {
     ...progress,
     totalStars: nextStars,
@@ -169,7 +180,7 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
   if (quiz.mode === 'practice') {
     next.practiceStats = {
       playCount: progress.practiceStats.playCount + 1,
-      totalCorrect: progress.practiceStats.totalCorrect + 3,
+      totalCorrect: progress.practiceStats.totalCorrect + correctCount,
     };
   } else {
     const level = quiz.mode.replace('level', '') as '1' | '2' | '3';
@@ -178,8 +189,8 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
       ...progress.levelStats,
       [level]: {
         playCount: stat.playCount + 1,
-        maxStars: Math.max(stat.maxStars, stars),
-        hasThreeStar: stat.hasThreeStar || stars === 3,
+        maxStars: Math.max(stat.maxStars, resultStars),
+        hasThreeStar: stat.hasThreeStar || resultStars === 3,
       },
     };
   }
@@ -220,7 +231,7 @@ function App() {
           if (latest.index === latest.questions.length - 1) {
             const done = { ...latest, status: 'done' as const };
             dispatch({ type: 'finish', quiz: done });
-            ping('star', sound);
+            if (!done.missed.some(Boolean)) ping('star', sound);
             return done;
           }
           const moved = { ...latest, index: latest.index + 1, selected: null, status: 'answering' as const };
@@ -266,7 +277,7 @@ function App() {
           ) : tab === 'practice' ? (
             <Practice progress={progress} onStart={() => startQuiz('practice')} />
           ) : (
-            <Reward progress={progress} sound={sound} />
+            <RewardPanel progress={progress} sound={sound} />
           )}
         </div>
         <BottomTabs active={tab} onTab={goTab} />
@@ -446,6 +457,65 @@ function Reward({ progress, sound }: { progress: Progress; sound: boolean }) {
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }) {
+  const earnedCards = Math.min(REWARD_CARDS.length, Math.floor(progress.totalStars / REWARD_CARD_SIZE));
+  const [previewCard, setPreviewCard] = useState<number | null>(null);
+  const cardStars = progress.totalStars === 0 ? 0 : progress.totalStars % REWARD_CARD_SIZE || REWARD_CARD_SIZE;
+  const remainingStars = REWARD_CARD_SIZE - cardStars;
+  const previewCards = REWARD_CARDS.slice(0, earnedCards);
+  const modalCard = previewCard === null ? null : REWARD_CARDS[previewCard];
+  return (
+    <div className="reward">
+      <section className="reward-showcase" aria-label="ごほうびカード">
+        <div className="reward-card">
+          <div className="reward-card-title"><span>★</span>ごほうびカード<span>★</span></div>
+          <div className="reward-card-grid">
+            {Array.from({ length: REWARD_CARD_SIZE }, (_, i) => (
+              <span key={i} className={i < cardStars ? 'filled' : ''}>★</span>
+            ))}
+          </div>
+        </div>
+        <div className="reward-gift" aria-hidden="true">
+          <img src={REWARD_GIFT} alt="" />
+        </div>
+      </section>
+      <div className="reward-message">
+        <span>あと <b>{remainingStars}</b>つで</span>
+        <span>ごほうび!</span>
+      </div>
+      <section className="reward-collection" aria-label="あつめた れっしゃ">
+        <h2>🎟️ あつめた ごほうびカード</h2>
+        <div className="reward-card-previews">
+          {previewCards.length > 0 ? (
+            previewCards.map((card, index) => (
+              <button key={card.title} className="reward-card-preview" onClick={() => { ping('tap', sound); setPreviewCard(index); }} aria-label={`${card.title} のごほうびカードをおおきくみる`}>
+                <img src={card.image} alt="" />
+                <span>{card.title}</span>
+              </button>
+            ))
+          ) : (
+            <div className="reward-card-empty">ごほうびカードを あつめよう!</div>
+          )}
+        </div>
+      </section>
+      {modalCard && (
+        <div className="reward-modal" role="dialog" aria-modal="true" aria-label={`${modalCard.title} のごほうびカード`}>
+          <button className="reward-modal-backdrop" onClick={() => setPreviewCard(null)} aria-label="閉じる" />
+          <div className="reward-modal-card">
+            <button className="reward-modal-close" onClick={() => setPreviewCard(null)} aria-label="閉じる">×</button>
+            <img className="reward-modal-image" src={modalCard.image} alt={`${modalCard.title} のごほうびカード`} />
+            <p>{modalCard.title} のごほうびカード!</p>
+          </div>
+        </div>
+      )}
+      <div className="reward-total">
+        <span>⭐</span>
+        <p>ごほうびのスターは <strong>{progress.totalStars}</strong>こ だよ!</p>
       </div>
     </div>
   );
