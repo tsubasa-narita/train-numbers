@@ -37,7 +37,8 @@ type QuizState = {
 };
 
 const STORAGE_KEY = 'ressha_kazu_progress';
-const ASSET_SHEET = `${import.meta.env.BASE_URL}images/ui/train-assets.png`;
+const HOME_BACKGROUND = `${import.meta.env.BASE_URL}images/ui/home-background.png`;
+const CONDUCTOR_BOY = `${import.meta.env.BASE_URL}images/ui/conductor-boy-home.png`;
 const trainImageUrl = (filename: string) => `${import.meta.env.BASE_URL}images/trains/${filename}`;
 const TRAIN_NAMES = QUIZ_TRAINS.map((train) => train.displayName);
 
@@ -251,9 +252,9 @@ function App() {
 
   return (
     <main className="shell">
-      <section className="phone" aria-label="れっしゃで かずあそび">
+      <section className={`phone ${quiz ? 'is-quiz' : tab === 'home' ? 'is-home' : ''}`} style={{ '--home-bg': `url(${HOME_BACKGROUND})` } as React.CSSProperties} aria-label="れっしゃで かずあそび">
         <Header progress={progress} sound={sound} onToggle={() => dispatch({ type: 'toggleSound' })} onSpeak={() => quiz && speak(quiz.questions[quiz.index]?.prompt ?? 'れっしゃで かずあそび', sound)} />
-        <div className="screen">
+        <div className={`screen ${quiz ? 'quiz-screen' : `${tab}-screen`}`}>
           {quiz ? (
             quiz.status === 'done' ? (
               <ResultScreen quiz={quiz} sound={sound} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
@@ -294,22 +295,19 @@ function Header({ progress, sound, onToggle, onSpeak }: { progress: Progress; so
   );
 }
 
-function Home({ progress, onStart }: { progress: Progress; onStart: (mode: Mode) => void }) {
+function Home({ onStart }: { progress: Progress; onStart: (mode: Mode) => void }) {
   return (
     <div className="home">
-      <div className="hero">
-        <div>
-          <p className="pill">3さいから</p>
-          <h1>でんしゃが すきな子へ</h1>
-          <p>1から10の かずを たのしく まなぼう</p>
+      <div className="home-hero">
+        <div className="home-logo" aria-hidden="true">
+          <small>れっしゃで</small>
+          <strong><span>か</span><span>ず</span><span>あ</span><span>そ</span><span>び</span></strong>
         </div>
-        <img src={ASSET_SHEET} alt="" className="asset-preview" />
+        <img className="home-conductor" src={CONDUCTOR_BOY} alt="" aria-hidden="true" />
       </div>
-      <ConductorBubble text="どの かずで あそぶ?" />
       <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} image="komachi.png" onClick={() => onStart('level1')} />
       <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} image="yokosuka_e235_1000.png" onClick={() => onStart('level2')} />
       <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} image="kagayaki_e7_w7.png" onClick={() => onStart('level3')} />
-      <p className="mini">これまでの ごほうび: ⭐ {progress.totalStars}こ</p>
     </div>
   );
 }
@@ -331,7 +329,7 @@ function LevelCard({ tone, title, subtitle, nums, image, onClick }: { tone: stri
 function ConductorBubble({ text }: { text: string }) {
   return (
     <div className="bubble">
-      <div className="conductor" aria-hidden="true">👨‍✈️</div>
+      <img className="conductor" src={CONDUCTOR_BOY} alt="" aria-hidden="true" />
       <p>{text}</p>
     </div>
   );
