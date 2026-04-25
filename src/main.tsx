@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QUIZ_TRAINS, type QuizTrain } from './data/quizTrains';
 import './styles.css';
 
 type Tab = 'home' | 'practice' | 'reward';
@@ -23,8 +24,7 @@ type Question = {
   choices: number[];
   prompt: string;
   hint: string;
-  imageUrl: string;
-  trainTone: string;
+  trains: QuizTrain[];
 };
 
 type QuizState = {
@@ -38,30 +38,8 @@ type QuizState = {
 
 const STORAGE_KEY = 'ressha_kazu_progress';
 const ASSET_SHEET = `${import.meta.env.BASE_URL}images/ui/train-assets.png`;
-const quizImageUrl = (count: number) => `${import.meta.env.BASE_URL}images/quiz/train-count-${String(count).padStart(2, '0')}.png`;
-
-const TRAIN_NAMES = [
-  'きいろい しんかんせん',
-  'まるい しんかんせん',
-  'しろい しんかんせん',
-  'はやい しんかんせん',
-  'あかい しんかんせん',
-  'みどりの でんしゃ',
-  'オレンジの でんしゃ',
-  'あおい でんしゃ',
-  'ぎんいろ ちかてつ',
-  'まるのうちせん',
-  'ぎんざせん',
-  'とっきゅう',
-  'スペーシア',
-  'おどりこ',
-  'サンライズ',
-  'きかんしゃ',
-  'あかい けいきゅう',
-  'おだきゅう',
-  'はんきゅう',
-  'モノレール',
-];
+const trainImageUrl = (filename: string) => `${import.meta.env.BASE_URL}images/trains/${filename}`;
+const TRAIN_NAMES = QUIZ_TRAINS.map((train) => train.displayName);
 
 const TRAIN_TONES = ['yellow', 'green', 'blue', 'red', 'teal', 'orange', 'silver', 'purple'];
 
@@ -143,15 +121,22 @@ function pick<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+function pickN<T>(items: T[], count: number) {
+  return shuffle(items).slice(0, count);
+}
+
 function questionText() {
   return 'でんしゃは なんほん いる?';
 }
 
 function generateQuestions(mode: Mode): Question[] {
   const range = rangeForMode(mode);
+  let previousNum: number | null = null;
   return Array.from({ length: 3 }, (_, index) => {
     const pattern: Pattern = 'trainCount';
-    const correctNum = pick(range);
+    const candidates = previousNum === null ? range : range.filter((n) => n !== previousNum);
+    const correctNum = pick(candidates);
+    previousNum = correctNum;
     const wrongPool = range.filter((n) => n !== correctNum);
     const choices = shuffle([correctNum, ...shuffle(wrongPool).slice(0, 2)]);
     return {
@@ -160,15 +145,14 @@ function generateQuestions(mode: Mode): Question[] {
       correctNum,
       choices,
       prompt: questionText(),
-      hint: 'しゃしんの なかの でんしゃを ぜんぶ かぞえよう',
-      imageUrl: quizImageUrl(correctNum),
-      trainTone: pick(TRAIN_TONES),
+      hint: '1だいずつ みて かぞえよう',
+      trains: pickN(QUIZ_TRAINS, correctNum),
     };
   });
 }
 
 function unlockedIds(totalStars: number) {
-  const thresholds = [0, 0, 0, 5, 5, 5, 10, 10, 10, 20, 20, 20, 35, 35, 35, 50, 50, 50, 80, 80];
+  const thresholds = QUIZ_TRAINS.map((_, index) => (index < 3 ? 0 : Math.ceil((index - 2) / 3) * 5));
   return thresholds.map((threshold, i) => (totalStars >= threshold ? `train-${i + 1}` : '')).filter(Boolean);
 }
 
@@ -322,18 +306,18 @@ function Home({ progress, onStart }: { progress: Progress; onStart: (mode: Mode)
         <img src={ASSET_SHEET} alt="" className="asset-preview" />
       </div>
       <ConductorBubble text="どの かずで あそぶ?" />
-      <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} imageNum={1} onClick={() => onStart('level1')} />
-      <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} imageNum={4} onClick={() => onStart('level2')} />
-      <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} imageNum={7} onClick={() => onStart('level3')} />
+      <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} image="komachi.png" onClick={() => onStart('level1')} />
+      <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} image="yokosuka_e235_1000.png" onClick={() => onStart('level2')} />
+      <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} image="kagayaki_e7_w7.png" onClick={() => onStart('level3')} />
       <p className="mini">これまでの ごほうび: ⭐ {progress.totalStars}こ</p>
     </div>
   );
 }
 
-function LevelCard({ tone, title, subtitle, nums, imageNum, onClick }: { tone: string; title: string; subtitle: string; nums: number[]; imageNum: number; onClick: () => void }) {
+function LevelCard({ tone, title, subtitle, nums, image, onClick }: { tone: string; title: string; subtitle: string; nums: number[]; image: string; onClick: () => void }) {
   return (
     <button className={`level-card ${tone}`} onClick={onClick}>
-      <img className="level-thumb" src={quizImageUrl(imageNum)} alt="" />
+      <img className="level-thumb" src={trainImageUrl(image)} alt="" />
       <span className="level-text">
         <strong>{title}</strong>
         <small>{subtitle}</small>
@@ -383,7 +367,11 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound }: { quiz: QuizState; onAns
 function VisualQuestion({ question }: { question: Question }) {
   return (
     <div className="visual photo-visual">
-      <img src={question.imageUrl} alt={`${question.correctNum}ほんの でんしゃ`} />
+      <div className={`train-card-grid count-${question.correctNum}`} aria-label={`${question.correctNum}だいの でんしゃ`}>
+        {question.trains.map((train) => (
+          <img key={`${question.id}-${train.id}`} src={trainImageUrl(train.image)} alt={`${train.displayName} ${train.model}`} title={`${train.displayName} ${train.model}`} />
+        ))}
+      </div>
     </div>
   );
 }
