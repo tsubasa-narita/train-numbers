@@ -130,9 +130,9 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   max-width: 352px;
   justify-self: center;
   transform: translateX(-18px);
-  grid-template-columns: minmax(108px, 36%) minmax(0, 1fr) 34px;
-  gap: 6px;
-  padding: 7px;
+  grid-template-columns: minmax(96px, 34%) minmax(0, 1fr) 34px;
+  gap: 8px;
+  padding: 9px;
 }
 .home .level-card.yellow { background: linear-gradient(110deg, #fffdf2 0 42%, #ffe9a1 42% 100%) !important; }
 .home .level-card.green { background: linear-gradient(110deg, #fbfff6 0 42%, #dff5bd 42% 100%) !important; }
@@ -173,6 +173,11 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   border: 3px solid #fff;
   box-shadow: 0 3px 0 #0002;
 }
+.home .level-thumb {
+  height: calc(100% - 10px);
+  max-height: 76px;
+  align-self: center;
+}
 .future-thumb {
   align-self: center;
   height: calc(100% - 10px);
@@ -192,19 +197,23 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   min-width: 0;
 }
 .home .level-text strong {
-  font-size: clamp(34px, 10vw, 48px);
+  font-size: clamp(30px, 8.8vw, 42px);
+  line-height: .76;
 }
 .home .level-text small {
-  font-size: 15px;
+  font-size: 14px;
+  margin: 0 0 2px;
 }
 .home .level-text b {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  font-size: 15px;
 }
 .home .level-text > span {
   display: flex;
   align-items: center;
-  transform: translateY(-5px);
+  transform: translateY(-2px);
 }
 .home .level-card i {
   width: 34px;
