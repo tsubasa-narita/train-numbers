@@ -313,11 +313,11 @@ function App() {
   return (
     <main className="shell">
       <section className={`phone ${quiz ? 'is-quiz' : tab === 'home' ? 'is-home' : ''}`} style={{ '--home-bg': `url(${HOME_BACKGROUND})` } as React.CSSProperties} aria-label="れっしゃで かずあそび">
-        <Header progress={progress} sound={voice} onToggle={() => dispatch({ type: 'toggleVoice' })} onSpeak={() => quiz && speak(quiz.questions[quiz.index]?.prompt ?? 'れっしゃで かずあそび', voice)} />
+        <Header onSpeak={() => quiz && speak(quiz.questions[quiz.index]?.prompt ?? 'れっしゃで かずあそび', voice)} />
         <div className={`screen ${quiz ? 'quiz-screen' : `${tab}-screen`}`}>
           {quiz ? (
             quiz.status === 'done' ? (
-              <ResultScreen quiz={quiz} sound={voice} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
+              <ResultScreen quiz={quiz} totalStars={progress.totalStars} sound={voice} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
             ) : (
               <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} sound={voice} tilePattern={progress.settings.tilePattern} />
             )
@@ -337,22 +337,13 @@ function App() {
   );
 }
 
-function Header({ progress, sound, onToggle, onSpeak }: { progress: Progress; sound: boolean; onToggle: () => void; onSpeak: () => void }) {
+function Header({ onSpeak }: { onSpeak: () => void }) {
   return (
     <header className="topbar">
-      <button className="sound" onClick={onToggle} aria-label="おとのオンオフ">
-        <span>{sound ? '🔊' : '🔇'}</span>
-        <b>おと</b>
-      </button>
       <button className="logo" onClick={onSpeak} aria-label="よみあげ">
         <small>れっしゃで</small>
         <strong><span>か</span><span>ず</span><span>あ</span><span>そ</span><span>び</span></strong>
       </button>
-      <div className="stars" aria-label={`ごほうび ${progress.totalStars}こ`}>
-        <span>⭐</span>
-        <b>ごほうび</b>
-        <strong>{progress.totalStars}</strong>
-      </div>
     </header>
   );
 }
@@ -370,6 +361,7 @@ function Home({ onStart }: { progress: Progress; onStart: (mode: Mode) => void }
       <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} image="komachi.png" onClick={() => onStart('level1')} />
       <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} image="yokosuka_e235_1000.png" onClick={() => onStart('level2')} />
       <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} image="kagayaki_e7_w7.png" onClick={() => onStart('level3')} />
+      <FutureLevelCard />
     </div>
   );
 }
@@ -453,20 +445,24 @@ function TrainGroup({ count, tone, tiny = false }: { count: number; tone: string
   );
 }
 
-function ResultScreen({ quiz, sound, onReplay, onHome }: { quiz: QuizState; sound: boolean; onReplay: () => void; onHome: () => void }) {
+function ResultScreen({ quiz, totalStars, sound, onReplay, onHome }: { quiz: QuizState; totalStars: number; sound: boolean; onReplay: () => void; onHome: () => void }) {
   const missed = quiz.missed.filter(Boolean).length;
   const earnedStamp = missed === 0;
+  const cardStars = totalStars === 0 ? 0 : totalStars % REWARD_CARD_SIZE || REWARD_CARD_SIZE;
+  const activeCard = Math.max(1, Math.ceil(Math.max(totalStars, 1) / REWARD_CARD_SIZE));
+  const newStampIndex = earnedStamp ? Math.max(0, cardStars - 1) : -1;
   const line = earnedStamp ? 'ぜんもん せいかい! スタンプ ゲット!' : 'よく できました! つぎは スタンプを めざそう!';
   useEffect(() => speak(line, sound), [line, sound]);
   return (
     <div className="result">
       <ConductorBubble text={line} />
       <h2>ごほうび</h2>
-      <div className={`stamp-result ${earnedStamp ? 'earned' : 'missed'}`} aria-label={earnedStamp ? 'ごほうびカードにスタンプを1こゲット' : '今回はスタンプなし'}>
+      <div className={`stamp-result ${earnedStamp ? 'earned' : 'missed'}`} aria-label={earnedStamp ? `ごほうびカード${activeCard}まいめにスタンプを1こゲット` : '今回はスタンプなし'}>
+        <p className="stamp-card-status">カード {activeCard}まいめ</p>
         <div className="stamp-card-mini" aria-hidden="true">
           {Array.from({ length: REWARD_CARD_SIZE }, (_, i) => (
-            <span key={i} className={earnedStamp && i === 0 ? 'new-stamp' : ''}>
-              {earnedStamp && i === 0 ? (
+            <span key={i} className={`${i < cardStars ? 'filled' : ''} ${i === newStampIndex ? 'new-stamp' : ''}`.trim()}>
+              {i === newStampIndex ? (
                 <>
                   <b>★</b>
                   <em>ポン!</em>
@@ -477,11 +473,25 @@ function ResultScreen({ quiz, sound, onReplay, onHome }: { quiz: QuizState; soun
             </span>
           ))}
         </div>
-        <strong>{earnedStamp ? 'スタンプ 1こ ゲット!' : 'ぜんもんせいかいで スタンプ 1こ!'}</strong>
+        <strong>{earnedStamp ? `${cardStars} / ${REWARD_CARD_SIZE}こ たまったよ!` : 'ぜんもんせいかいで スタンプ 1こ!'}</strong>
       </div>
       <button className="primary" onClick={onReplay}>もういちど あそぶ</button>
       <button className="secondary" onClick={onHome}>ホームに もどる</button>
     </div>
+  );
+}
+
+function FutureLevelCard() {
+  return (
+    <button className="level-card future" disabled aria-label="11から20は じゅんびちゅう">
+      <div className="level-thumb future-thumb" aria-hidden="true">?</div>
+      <span className="level-text">
+        <strong>???</strong>
+        <small>11〜20 じゅんびちゅう</small>
+        <span>{[11, 12, 13].map((n) => <b key={n}>?</b>)}</span>
+      </span>
+      <i>🔒</i>
+    </button>
   );
 }
 
@@ -497,50 +507,19 @@ function Practice({ progress, onStart }: { progress: Progress; onStart: () => vo
   );
 }
 
-function Reward({ progress, sound }: { progress: Progress; sound: boolean }) {
-  const unlocked = new Set(progress.unlockedTrainIds);
-  return (
-    <div className="reward">
-      <h1>ごほうび</h1>
-      <div className="reward-stars">⭐ <strong>{progress.totalStars}</strong>こ</div>
-      <div className="boards">
-        {(['1', '2', '3'] as const).map((level) => (
-          <div className="board" key={level}>
-            <b>Lv{level}</b>
-            <span>{progress.levelStats[level].playCount}かい</span>
-            <span>{'★'.repeat(progress.levelStats[level].maxStars)}{'☆'.repeat(3 - progress.levelStats[level].maxStars)}</span>
-          </div>
-        ))}
-      </div>
-      <h2>でんしゃ ずかん</h2>
-      <div className="collection">
-        {TRAIN_NAMES.map((name, i) => {
-          const id = `train-${i + 1}`;
-          const open = unlocked.has(id);
-          return (
-            <button key={id} className={`train-tile ${open ? '' : 'locked'}`} onClick={() => open && speak(name, sound)} aria-label={open ? name : 'まだ ひみつ'}>
-              <TrainLine count={1} tone={TRAIN_TONES[i % TRAIN_TONES.length]} compact />
-              <small>{open ? name : '🔒'}</small>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }) {
   const earnedCards = Math.min(REWARD_CARDS.length, Math.floor(progress.totalStars / REWARD_CARD_SIZE));
   const [previewCard, setPreviewCard] = useState<number | null>(null);
   const cardStars = progress.totalStars === 0 ? 0 : progress.totalStars % REWARD_CARD_SIZE || REWARD_CARD_SIZE;
   const remainingStars = REWARD_CARD_SIZE - cardStars;
+  const activeCard = Math.max(1, Math.ceil(Math.max(progress.totalStars, 1) / REWARD_CARD_SIZE));
   const previewCards = REWARD_CARDS.slice(0, earnedCards);
   const modalCard = previewCard === null ? null : REWARD_CARDS[previewCard];
   return (
     <div className="reward">
       <section className="reward-showcase" aria-label="ごほうびカード">
         <div className="reward-card">
-          <div className="reward-card-title"><span>★</span>ごほうびカード<span>★</span></div>
+          <div className="reward-card-title"><span>★</span>カード {activeCard}まいめ<span>★</span></div>
           <div className="reward-card-grid">
             {Array.from({ length: REWARD_CARD_SIZE }, (_, i) => (
               <span key={i} className={i < cardStars ? 'filled' : ''}>★</span>
@@ -552,8 +531,17 @@ function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }
         </div>
       </section>
       <div className="reward-message">
-        <span>あと <b>{remainingStars}</b>つで</span>
-        <span>ごほうび!</span>
+        {remainingStars === 0 ? (
+          <>
+            <span>カード いっぱい!</span>
+            <span>ごほうび ゲット!</span>
+          </>
+        ) : (
+          <>
+            <span>あと <b>{remainingStars}</b>つで</span>
+            <span>ごほうび!</span>
+          </>
+        )}
       </div>
       <section className="reward-collection" aria-label="あつめた れっしゃ">
         <h2>🎟️ あつめた ごほうびカード</h2>
@@ -580,10 +568,6 @@ function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }
           </div>
         </div>
       )}
-      <div className="reward-total">
-        <span>⭐</span>
-        <p>ごほうびのスターは <strong>{progress.totalStars}</strong>こ だよ!</p>
-      </div>
     </div>
   );
 }
