@@ -3,16 +3,26 @@ import { createRoot } from 'react-dom/client';
 import { QUIZ_TRAINS, type QuizTrain } from './data/quizTrains';
 import './styles.css';
 
-type Tab = 'home' | 'practice' | 'reward';
+type Tab = 'home' | 'practice' | 'reward' | 'settings';
 type Mode = 'level1' | 'level2' | 'level3' | 'practice';
 type Pattern = 'trainCount';
+type TilePattern = 'fixed' | 'shuffle' | 'mixed';
+type QuestionRange = 'level' | '1-3' | '4-6' | '7-10' | '1-10';
+
+type Settings = {
+  soundEnabled: boolean;
+  voiceEnabled: boolean;
+  effectsEnabled: boolean;
+  tilePattern: TilePattern;
+  questionRange: QuestionRange;
+};
 
 type Progress = {
   totalStars: number;
   levelStats: Record<'1' | '2' | '3', { playCount: number; maxStars: number; hasThreeStar: boolean }>;
   practiceStats: { playCount: number; totalCorrect: number };
   unlockedTrainIds: string[];
-  settings: { soundEnabled: boolean };
+  settings: Settings;
   firstLaunchedAt: string;
   lastPlayedAt: string;
 };
@@ -52,6 +62,14 @@ const REWARD_CARDS = [
   { title: 'しょうなんしんじゅく', image: `${import.meta.env.BASE_URL}images/ui/reward-card-shonan-shinjuku.png` },
 ];
 
+const DEFAULT_SETTINGS: Settings = {
+  soundEnabled: true,
+  voiceEnabled: true,
+  effectsEnabled: true,
+  tilePattern: 'fixed',
+  questionRange: 'level',
+};
+
 function defaultProgress(): Progress {
   const now = new Date().toISOString();
   return {
@@ -63,7 +81,7 @@ function defaultProgress(): Progress {
     },
     practiceStats: { playCount: 0, totalCorrect: 0 },
     unlockedTrainIds: ['train-1', 'train-2', 'train-3'],
-    settings: { soundEnabled: true },
+    settings: DEFAULT_SETTINGS,
     firstLaunchedAt: now,
     lastPlayedAt: now,
   };
@@ -72,7 +90,22 @@ function defaultProgress(): Progress {
 function loadProgress(): Progress {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...defaultProgress(), ...JSON.parse(raw) } : defaultProgress();
+    if (!raw) return defaultProgress();
+    const parsed = JSON.parse(raw) as Partial<Progress>;
+    const fallback = defaultProgress();
+    const legacySound = parsed.settings?.soundEnabled ?? true;
+    return {
+      ...fallback,
+      ...parsed,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        soundEnabled: legacySound,
+        voiceEnabled: parsed.settings?.voiceEnabled ?? legacySound,
+        effectsEnabled: parsed.settings?.effectsEnabled ?? legacySound,
+        tilePattern: parsed.settings?.tilePattern ?? DEFAULT_SETTINGS.tilePattern,
+        questionRange: parsed.settings?.questionRange ?? DEFAULT_SETTINGS.questionRange,
+      },
+    };
   } catch {
     return defaultProgress();
   }
@@ -122,6 +155,14 @@ function rangeForMode(mode: Mode) {
   return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 }
 
+function rangeForSetting(mode: Mode, questionRange: QuestionRange) {
+  if (questionRange === '1-3') return [1, 2, 3];
+  if (questionRange === '4-6') return [4, 5, 6];
+  if (questionRange === '7-10') return [7, 8, 9, 10];
+  if (questionRange === '1-10') return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  return rangeForMode(mode);
+}
+
 function shuffle<T>(items: T[]) {
   return [...items].sort(() => Math.random() - 0.5);
 }
@@ -138,8 +179,8 @@ function questionText() {
   return 'でんしゃは なんほん いる?';
 }
 
-function generateQuestions(mode: Mode): Question[] {
-  const range = rangeForMode(mode);
+function generateQuestions(mode: Mode, settings: Settings): Question[] {
+  const range = rangeForSetting(mode, settings.questionRange);
   let previousNum: number | null = null;
   return Array.from({ length: 3 }, (_, index) => {
     const pattern: Pattern = 'trainCount';
@@ -197,8 +238,15 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
   return next;
 }
 
-function progressReducer(progress: Progress, action: { type: 'toggleSound' } | { type: 'finish'; quiz: QuizState }) {
-  if (action.type === 'toggleSound') return { ...progress, settings: { soundEnabled: !progress.settings.soundEnabled } };
+function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'finish'; quiz: QuizState }) {
+  if (action.type === 'toggleVoice') {
+    const nextVoice = !progress.settings.voiceEnabled;
+    return { ...progress, settings: { ...progress.settings, voiceEnabled: nextVoice, soundEnabled: nextVoice } };
+  }
+  if (action.type === 'updateSettings') {
+    const nextSettings = { ...progress.settings, ...action.settings };
+    return { ...progress, settings: { ...nextSettings, soundEnabled: nextSettings.voiceEnabled || nextSettings.effectsEnabled } };
+  }
   return completeSession(progress, action.quiz);
 }
 
@@ -206,24 +254,25 @@ function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [progress, dispatch] = useReducer(progressReducer, undefined, loadProgress);
   const [quiz, setQuiz] = useState<QuizState | null>(null);
-  const sound = progress.settings.soundEnabled;
+  const voice = progress.settings.voiceEnabled;
+  const effects = progress.settings.effectsEnabled;
 
   useEffect(() => saveProgress(progress), [progress]);
 
   const startQuiz = (mode: Mode) => {
-    ping('tap', sound);
-    const nextQuiz = { mode, questions: generateQuestions(mode), index: 0, missed: [false, false, false], selected: null, status: 'answering' as const };
+    ping('tap', effects);
+    const nextQuiz = { mode, questions: generateQuestions(mode, progress.settings), index: 0, missed: [false, false, false], selected: null, status: 'answering' as const };
     setQuiz(nextQuiz);
     setTab(mode === 'practice' ? 'practice' : 'home');
-    setTimeout(() => speak(nextQuiz.questions[0].prompt, sound), 150);
+    setTimeout(() => speak(nextQuiz.questions[0].prompt, voice), 150);
   };
 
   const answer = (choice: number) => {
     if (!quiz || quiz.status !== 'answering') return;
     const current = quiz.questions[quiz.index];
     if (choice === current.correctNum) {
-      ping('correct', sound);
-      speak(pick(['せいかい! すごいね!', 'じょうず! やったー!']), sound);
+      ping('correct', effects);
+      speak(pick(['せいかい! すごいね!', 'じょうず! やったー!']), voice);
       setQuiz({ ...quiz, selected: choice, status: 'correct' });
       setTimeout(() => {
         setQuiz((latest) => {
@@ -231,17 +280,17 @@ function App() {
           if (latest.index === latest.questions.length - 1) {
             const done = { ...latest, status: 'done' as const };
             dispatch({ type: 'finish', quiz: done });
-            if (!done.missed.some(Boolean)) ping('star', sound);
+            if (!done.missed.some(Boolean)) ping('star', effects);
             return done;
           }
           const moved = { ...latest, index: latest.index + 1, selected: null, status: 'answering' as const };
-          setTimeout(() => speak(moved.questions[moved.index].prompt, sound), 100);
+          setTimeout(() => speak(moved.questions[moved.index].prompt, voice), 100);
           return moved;
         });
       }, 850);
     } else {
-      ping('incorrect', sound);
-      speak('おしい! もういちど ちょうせん!', sound);
+      ping('incorrect', effects);
+      speak('おしい! もういちど ちょうせん!', voice);
       const missed = [...quiz.missed];
       missed[quiz.index] = true;
       setQuiz({ ...quiz, missed, selected: choice, status: 'incorrect' });
@@ -250,13 +299,13 @@ function App() {
 
   const retry = () => {
     if (!quiz) return;
-    ping('tap', sound);
+    ping('tap', effects);
     setQuiz({ ...quiz, selected: null, status: 'answering' });
-    speak(quiz.questions[quiz.index].prompt, sound);
+    speak(quiz.questions[quiz.index].prompt, voice);
   };
 
   const goTab = (next: Tab) => {
-    ping('tap', sound);
+    ping('tap', effects);
     setQuiz(null);
     setTab(next);
   };
@@ -264,20 +313,22 @@ function App() {
   return (
     <main className="shell">
       <section className={`phone ${quiz ? 'is-quiz' : tab === 'home' ? 'is-home' : ''}`} style={{ '--home-bg': `url(${HOME_BACKGROUND})` } as React.CSSProperties} aria-label="れっしゃで かずあそび">
-        <Header progress={progress} sound={sound} onToggle={() => dispatch({ type: 'toggleSound' })} onSpeak={() => quiz && speak(quiz.questions[quiz.index]?.prompt ?? 'れっしゃで かずあそび', sound)} />
+        <Header progress={progress} sound={voice} onToggle={() => dispatch({ type: 'toggleVoice' })} onSpeak={() => quiz && speak(quiz.questions[quiz.index]?.prompt ?? 'れっしゃで かずあそび', voice)} />
         <div className={`screen ${quiz ? 'quiz-screen' : `${tab}-screen`}`}>
           {quiz ? (
             quiz.status === 'done' ? (
-              <ResultScreen quiz={quiz} sound={sound} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
+              <ResultScreen quiz={quiz} sound={voice} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
             ) : (
-              <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} sound={sound} />
+              <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} sound={voice} tilePattern={progress.settings.tilePattern} />
             )
           ) : tab === 'home' ? (
             <Home progress={progress} onStart={startQuiz} />
           ) : tab === 'practice' ? (
             <Practice progress={progress} onStart={() => startQuiz('practice')} />
+          ) : tab === 'settings' ? (
+            <SettingsPanel settings={progress.settings} onChange={(settings) => dispatch({ type: 'updateSettings', settings })} />
           ) : (
-            <RewardPanel progress={progress} sound={sound} />
+            <RewardPanel progress={progress} sound={effects} />
           )}
         </div>
         <BottomTabs active={tab} onTab={goTab} />
@@ -346,7 +397,7 @@ function ConductorBubble({ text }: { text: string }) {
   );
 }
 
-function QuizScreen({ quiz, onAnswer, onRetry, sound }: { quiz: QuizState; onAnswer: (choice: number) => void; onRetry: () => void; sound: boolean }) {
+function QuizScreen({ quiz, onAnswer, onRetry, sound, tilePattern }: { quiz: QuizState; onAnswer: (choice: number) => void; onRetry: () => void; sound: boolean; tilePattern: TilePattern }) {
   const q = quiz.questions[quiz.index];
   useEffect(() => speak(q.prompt, sound), [q.id, q.prompt, sound]);
   return (
@@ -359,7 +410,7 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound }: { quiz: QuizState; onAns
         <span>{modeLabel(quiz.mode)}</span>
         <strong>{q.prompt}</strong>
       </button>
-      <VisualQuestion question={q} />
+      <VisualQuestion question={q} tilePattern={tilePattern} />
       <div className="choice-grid">
         {q.choices.map((choice) => (
           <button key={choice} className={choiceClass(quiz, choice)} onClick={() => onAnswer(choice)}>
@@ -373,10 +424,11 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound }: { quiz: QuizState; onAns
   );
 }
 
-function VisualQuestion({ question }: { question: Question }) {
+function VisualQuestion({ question, tilePattern }: { question: Question; tilePattern: TilePattern }) {
+  const layoutClass = tilePattern === 'fixed' ? 'layout-fixed' : tilePattern === 'shuffle' ? 'layout-shuffle' : `layout-mixed layout-${(question.correctNum + question.id.length) % 3}`;
   return (
     <div className="visual photo-visual">
-      <div className={`train-card-grid count-${question.correctNum}`} aria-label={`${question.correctNum}だいの でんしゃ`}>
+      <div className={`train-card-grid count-${question.correctNum} ${layoutClass}`} aria-label={`${question.correctNum}だいの でんしゃ`}>
         {question.trains.map((train) => (
           <img key={`${question.id}-${train.id}`} src={trainImageUrl(train.image)} alt={`${train.displayName} ${train.model}`} title={`${train.displayName} ${train.model}`} />
         ))}
@@ -403,15 +455,30 @@ function TrainGroup({ count, tone, tiny = false }: { count: number; tone: string
 
 function ResultScreen({ quiz, sound, onReplay, onHome }: { quiz: QuizState; sound: boolean; onReplay: () => void; onHome: () => void }) {
   const missed = quiz.missed.filter(Boolean).length;
-  const stars = missed === 0 ? 3 : missed <= 2 ? 2 : 1;
-  const line = stars === 3 ? 'ぜんもん せいかい! すごい!' : stars === 2 ? 'よく できました!' : 'さいごまで がんばったね!';
+  const earnedStamp = missed === 0;
+  const line = earnedStamp ? 'ぜんもん せいかい! スタンプ ゲット!' : 'よく できました! つぎは スタンプを めざそう!';
   useEffect(() => speak(line, sound), [line, sound]);
   return (
     <div className="result">
       <ConductorBubble text={line} />
       <h2>ごほうび</h2>
-      <div className="big-stars">{Array.from({ length: 3 }, (_, i) => <span key={i} className={i < stars ? 'on' : ''}>★</span>)}</div>
-      <p>⭐ {stars}こ あつめたよ</p>
+      <div className={`stamp-result ${earnedStamp ? 'earned' : 'missed'}`} aria-label={earnedStamp ? 'ごほうびカードにスタンプを1こゲット' : '今回はスタンプなし'}>
+        <div className="stamp-card-mini" aria-hidden="true">
+          {Array.from({ length: REWARD_CARD_SIZE }, (_, i) => (
+            <span key={i} className={earnedStamp && i === 0 ? 'new-stamp' : ''}>
+              {earnedStamp && i === 0 ? (
+                <>
+                  <b>★</b>
+                  <em>ポン!</em>
+                </>
+              ) : (
+                '★'
+              )}
+            </span>
+          ))}
+        </div>
+        <strong>{earnedStamp ? 'スタンプ 1こ ゲット!' : 'ぜんもんせいかいで スタンプ 1こ!'}</strong>
+      </div>
       <button className="primary" onClick={onReplay}>もういちど あそぶ</button>
       <button className="secondary" onClick={onHome}>ホームに もどる</button>
     </div>
@@ -521,11 +588,65 @@ function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }
   );
 }
 
+function SettingsPanel({ settings, onChange }: { settings: Settings; onChange: (settings: Partial<Settings>) => void }) {
+  const tileOptions: { value: TilePattern; label: string; hint: string }[] = [
+    { value: 'fixed', label: 'いつも同じ', hint: '見やすくならべる' },
+    { value: 'shuffle', label: 'まぜる', hint: '写真の大きさを少し変える' },
+    { value: 'mixed', label: 'ランダム', hint: '毎回ちがう形にする' },
+  ];
+  const rangeOptions: { value: QuestionRange; label: string }[] = [
+    { value: 'level', label: 'レベルどおり' },
+    { value: '1-3', label: '1〜3' },
+    { value: '4-6', label: '4〜6' },
+    { value: '7-10', label: '7〜10' },
+    { value: '1-10', label: '1〜10' },
+  ];
+  return (
+    <div className="settings">
+      <h1>⚙️ せってい</h1>
+      <section className="setting-group">
+        <h2>タイルの ならべかた</h2>
+        <div className="setting-options three">
+          {tileOptions.map((option) => (
+            <button key={option.value} className={settings.tilePattern === option.value ? 'selected' : ''} onClick={() => onChange({ tilePattern: option.value })}>
+              <strong>{option.label}</strong>
+              <small>{option.hint}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="setting-group">
+        <h2>もんだいの はんい</h2>
+        <div className="setting-options ranges">
+          {rangeOptions.map((option) => (
+            <button key={option.value} className={settings.questionRange === option.value ? 'selected' : ''} onClick={() => onChange({ questionRange: option.value })}>
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="setting-group switches">
+        <button className={settings.voiceEnabled ? 'selected' : ''} onClick={() => onChange({ voiceEnabled: !settings.voiceEnabled })}>
+          <span>🔊</span>
+          <strong>よみあげ</strong>
+          <small>{settings.voiceEnabled ? 'オン' : 'オフ'}</small>
+        </button>
+        <button className={settings.effectsEnabled ? 'selected' : ''} onClick={() => onChange({ effectsEnabled: !settings.effectsEnabled })}>
+          <span>🎵</span>
+          <strong>こうかおん</strong>
+          <small>{settings.effectsEnabled ? 'オン' : 'オフ'}</small>
+        </button>
+      </section>
+    </div>
+  );
+}
+
 function BottomTabs({ active, onTab }: { active: Tab; onTab: (tab: Tab) => void }) {
   const tabs: { id: Tab; icon: string; label: string }[] = [
     { id: 'home', icon: '🏠', label: 'ホーム' },
     { id: 'practice', icon: '✏️', label: 'れんしゅう' },
     { id: 'reward', icon: '🏆', label: 'ごほうび' },
+    { id: 'settings', icon: '⚙️', label: 'せってい' },
   ];
   return (
     <nav className="tabs">
