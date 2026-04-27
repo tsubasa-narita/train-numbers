@@ -238,7 +238,7 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
   return next;
 }
 
-function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'finish'; quiz: QuizState }) {
+function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'resetStamps' } | { type: 'finish'; quiz: QuizState }) {
   if (action.type === 'toggleVoice') {
     const nextVoice = !progress.settings.voiceEnabled;
     return { ...progress, settings: { ...progress.settings, voiceEnabled: nextVoice, soundEnabled: nextVoice } };
@@ -246,6 +246,9 @@ function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | {
   if (action.type === 'updateSettings') {
     const nextSettings = { ...progress.settings, ...action.settings };
     return { ...progress, settings: { ...nextSettings, soundEnabled: nextSettings.voiceEnabled || nextSettings.effectsEnabled } };
+  }
+  if (action.type === 'resetStamps') {
+    return { ...progress, totalStars: 0, unlockedTrainIds: unlockedIds(0), lastPlayedAt: new Date().toISOString() };
   }
   return completeSession(progress, action.quiz);
 }
@@ -326,7 +329,7 @@ function App() {
           ) : tab === 'practice' ? (
             <Practice progress={progress} onStart={() => startQuiz('practice')} />
           ) : tab === 'settings' ? (
-            <SettingsPanel settings={progress.settings} onChange={(settings) => dispatch({ type: 'updateSettings', settings })} />
+            <SettingsPanel settings={progress.settings} onChange={(settings) => dispatch({ type: 'updateSettings', settings })} onResetStamps={() => dispatch({ type: 'resetStamps' })} />
           ) : (
             <RewardPanel progress={progress} sound={effects} />
           )}
@@ -572,7 +575,7 @@ function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }
   );
 }
 
-function SettingsPanel({ settings, onChange }: { settings: Settings; onChange: (settings: Partial<Settings>) => void }) {
+function SettingsPanel({ settings, onChange, onResetStamps }: { settings: Settings; onChange: (settings: Partial<Settings>) => void; onResetStamps: () => void }) {
   const tileOptions: { value: TilePattern; label: string; hint: string }[] = [
     { value: 'fixed', label: 'いつも同じ', hint: '見やすくならべる' },
     { value: 'shuffle', label: 'まぜる', hint: '写真の大きさを少し変える' },
@@ -585,6 +588,11 @@ function SettingsPanel({ settings, onChange }: { settings: Settings; onChange: (
     { value: '7-10', label: '7〜10' },
     { value: '1-10', label: '1〜10' },
   ];
+  const confirmResetStamps = () => {
+    if (window.confirm('ごほうびカードのスタンプを ぜんぶ けします。よろしいですか?')) {
+      onResetStamps();
+    }
+  };
   return (
     <div className="settings">
       <h1>⚙️ せってい</h1>
@@ -619,6 +627,14 @@ function SettingsPanel({ settings, onChange }: { settings: Settings; onChange: (
           <span>🎵</span>
           <strong>こうかおん</strong>
           <small>{settings.effectsEnabled ? 'オン' : 'オフ'}</small>
+        </button>
+      </section>
+      <section className="setting-group danger">
+        <h2>ごほうびカード</h2>
+        <button className="reset-stamps" onClick={confirmResetStamps}>
+          <span>🧹</span>
+          <strong>スタンプを けす</strong>
+          <small>カードのスタンプだけを 0こにする</small>
         </button>
       </section>
     </div>
