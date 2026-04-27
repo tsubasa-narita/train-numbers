@@ -541,6 +541,265 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .train-tile { min-height: 90px; border-radius: 14px; background: #fff; border: 3px solid #9fd7ff; padding: 6px; color: #07336d; display: grid; align-content: center; gap: 4px; }
 .train-tile small { font-size: 11px; font-weight: 900; line-height: 1.1; }
 .train-tile.locked { filter: grayscale(1); opacity: .6; }
+.reward-opening {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-rows: 116px minmax(0, 1fr) 92px 74px;
+  gap: 8px;
+  padding: 18px 18px 20px;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 40%, #8fe4ff 0 18%, transparent 48%),
+    linear-gradient(180deg, #2b7be9 0%, #4fb5f4 58%, #d6fbff 100%);
+}
+.reward-opening::before,
+.reward-opening::after {
+  content: "★";
+  position: absolute;
+  color: #fff9a8;
+  font-size: 44px;
+  text-shadow: 0 0 14px #ffe266, 0 3px #f6a600;
+  animation: openingSparkle 1.35s ease-in-out infinite;
+}
+.reward-opening::before {
+  left: 24px;
+  top: 220px;
+}
+.reward-opening::after {
+  right: 28px;
+  top: 290px;
+  animation-delay: .35s;
+}
+.reward-opening-sky {
+  position: absolute;
+  inset: 0;
+  opacity: .36;
+  background:
+    radial-gradient(circle at 20% 18%, #ffffff 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 24%, #ffffff 0 2px, transparent 3px),
+    radial-gradient(circle at 72% 58%, #fff7a3 0 3px, transparent 4px);
+  pointer-events: none;
+}
+.reward-opening-title {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  display: grid;
+  gap: 4px;
+  text-shadow: 0 4px #174ca4;
+}
+.reward-opening-title small {
+  color: #fff7b3;
+  font-size: 18px;
+  font-weight: 900;
+}
+.reward-opening-title strong {
+  font-size: 38px;
+  line-height: 1.05;
+  font-weight: 900;
+}
+.reward-opening-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.reward-opening-rays {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, #fff4a8 0 8deg, #fff0 8deg 16deg);
+  opacity: 0;
+  filter: blur(.3px);
+  transform: scale(.5);
+}
+.reward-opening.is-open .reward-opening-rays {
+  animation: rewardRays .9s ease-out forwards;
+}
+.reward-opening-card {
+  position: absolute;
+  z-index: 4;
+  width: min(76%, 282px);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  opacity: 0;
+  transform: translateY(84px) scale(.64);
+  filter: drop-shadow(0 12px 0 #0a3b8566);
+}
+.reward-opening-card img {
+  width: 100%;
+  max-height: 238px;
+  object-fit: contain;
+  border-radius: 22px;
+  border: 6px solid #fff;
+  background: #fff;
+  box-shadow: 0 0 0 4px #ffcf33, 0 12px 24px #07336d66;
+}
+.reward-opening-card span {
+  min-width: 72%;
+  padding: 5px 14px 8px;
+  border-radius: 999px;
+  color: #0d47a1;
+  background: #fffdf6;
+  border: 4px solid #9ed0ff;
+  font-size: 24px;
+  font-weight: 900;
+}
+.reward-opening.is-open .reward-opening-card {
+  animation: rewardCardRise .95s cubic-bezier(.16, 1.18, .28, 1) forwards;
+}
+.gift-station {
+  position: relative;
+  width: min(92%, 330px);
+  height: min(70%, 320px);
+  min-height: 260px;
+  display: grid;
+  place-items: end center;
+}
+.gift-station-roof {
+  position: absolute;
+  top: 10px;
+  width: 96%;
+  height: 70px;
+  border-radius: 22px 22px 8px 8px;
+  background: linear-gradient(#2c75d5, #174caa);
+  border: 5px solid #103b86;
+  clip-path: polygon(50% 0, 100% 46%, 94% 100%, 6% 100%, 0 46%);
+  box-shadow: 0 8px 0 #0d3471;
+  z-index: 3;
+}
+.gift-station-roof span {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  color: #ffc91d;
+  background: #f2f5f8;
+  border: 5px solid #687786;
+  text-shadow: 0 2px #f28b00;
+  font-size: 28px;
+}
+.gift-shutter {
+  position: absolute;
+  z-index: 2;
+  top: 80px;
+  width: 82%;
+  height: 108px;
+  border-radius: 10px;
+  border: 5px solid #879aaa;
+  background:
+    repeating-linear-gradient(180deg, #a9bdcc 0 13px, #8297a9 13px 18px),
+    linear-gradient(#c9d8e2, #6c8295);
+  box-shadow: inset 0 -12px 0 #596d7e99;
+}
+.reward-opening.is-open .gift-shutter {
+  animation: shutterOpen .62s ease-in forwards;
+}
+.gift-glow {
+  position: absolute;
+  z-index: 1;
+  bottom: 46px;
+  width: 82%;
+  height: 150px;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 45%, #fff 0 10%, #fff2a8 22%, #ffb72e 58%, #6b3a00 100%);
+  opacity: 0;
+  box-shadow: 0 0 26px #ffe266;
+}
+.reward-opening.is-open .gift-glow {
+  animation: giftGlow .72s ease-out .22s forwards;
+}
+.gift-base {
+  position: absolute;
+  bottom: 20px;
+  width: 90%;
+  height: 170px;
+  border-radius: 16px 16px 22px 22px;
+  background:
+    linear-gradient(90deg, #263b51 0 10%, transparent 10% 90%, #263b51 90% 100%),
+    linear-gradient(#f7f1dc, #d5bd8d);
+  border: 6px solid #1a4d93;
+  box-shadow: 0 11px 0 #0b3778;
+}
+.gift-base::before,
+.gift-base::after {
+  content: "";
+  position: absolute;
+  bottom: 10px;
+  width: 38px;
+  height: 78px;
+  background: repeating-linear-gradient(-35deg, #1d2d3f 0 13px, #ffd246 13px 26px);
+  border-radius: 8px;
+}
+.gift-base::before { left: 10px; }
+.gift-base::after { right: 10px; }
+.reward-opening-copy {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  color: #0d47a1;
+  text-shadow: 0 3px #fff;
+}
+.reward-opening-copy strong {
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 900;
+}
+.reward-opening-copy span {
+  font-size: 24px;
+  font-weight: 900;
+}
+.reward-opening-button,
+.reward-opening-done {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  justify-self: center;
+  width: min(86%, 330px);
+  min-height: 64px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(#ffdf6d, #ff6d00);
+  border: 5px solid #fff;
+  box-shadow: 0 7px 0 #bd4100;
+  font-size: 30px;
+  font-weight: 900;
+  text-shadow: 0 3px #b53f00;
+}
+.reward-opening-done {
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(#ffffff, #e5f6ff);
+  color: #0d47a1;
+  box-shadow: 0 7px 0 #5ea4ea;
+  text-shadow: none;
+}
+.reward-opening-done:disabled {
+  cursor: default;
+}
+.reward-opening.is-revealed .reward-opening-done {
+  opacity: 1;
+  pointer-events: auto;
+  animation: doneButtonIn .35s ease-out both;
+}
+.reward-opening.is-open .reward-opening-button {
+  visibility: hidden;
+}
 .reward-screen {
   overflow: hidden;
 }
@@ -555,7 +814,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .reward-showcase {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px;
+  grid-template-columns: minmax(0, 1fr) 150px;
   align-items: end;
   gap: 8px;
   min-height: 0;
@@ -616,14 +875,66 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   min-height: 198px;
   display: grid;
   place-items: center;
+  isolation: isolate;
 }
 .reward-gift img {
-  width: 132px;
-  height: 132px;
+  width: 148px;
+  height: 148px;
   object-fit: cover;
   border-radius: 26px;
   border: 4px solid #fff;
   box-shadow: 0 8px 0 #0002;
+}
+.reward-gift img.reward-gift-card {
+  object-fit: contain;
+  background: #fffdf6;
+  border-color: #ffcf33;
+  box-shadow: 0 0 0 4px #fff4b0, 0 8px 0 #0002;
+}
+.reward.has-gift .reward-gift::before,
+.reward.has-gift .reward-gift::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+.reward.has-gift .reward-gift::before {
+  width: 142px;
+  height: 42px;
+  top: 36px;
+  border-radius: 18px 18px 8px 8px;
+  background: linear-gradient(135deg, #ffe889, #ffb72e 62%, #ff7438 63% 100%);
+  border: 4px solid #fff3be;
+  box-shadow: 0 6px 0 #c86a1e66;
+  transform-origin: 18% 100%;
+}
+.reward.has-gift .reward-gift::after {
+  width: 128px;
+  height: 96px;
+  bottom: 24px;
+  border-radius: 12px 12px 22px 22px;
+  background:
+    linear-gradient(90deg, transparent 0 42%, #e94935 42% 58%, transparent 58% 100%),
+    linear-gradient(#ffd962, #ffb12b);
+  border: 4px solid #ffec9a;
+  box-shadow: 0 8px 0 #c86a1e55;
+}
+.reward.has-gift .reward-gift img {
+  opacity: .18;
+  transform: translateY(10px) scale(.86);
+}
+.reward.gift-open .reward-gift::before {
+  animation: giftLidOpen .72s cubic-bezier(.2, 1.35, .3, 1) forwards;
+}
+.reward.gift-open .reward-gift::after {
+  animation: giftBoxSink .55s ease-out forwards;
+}
+.reward.gift-open .reward-gift img {
+  opacity: 1;
+  animation: giftTrainPop .85s cubic-bezier(.2, 1.35, .4, 1) forwards;
+}
+.reward.gift-open .reward-gift {
+  filter: drop-shadow(0 0 18px #ffe070);
 }
 .reward-message {
   width: 82%;
@@ -643,6 +954,20 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .reward-message b {
   color: #e43131;
   font-size: 40px;
+}
+.open-gift {
+  min-width: 160px;
+  min-height: 44px;
+  margin-top: 3px;
+  padding: 4px 22px 7px;
+  border-radius: 999px;
+  background: linear-gradient(#ffdf6d, #ff8a00);
+  color: #fff;
+  border: 4px solid #fff;
+  box-shadow: 0 5px 0 #c64b00;
+  font-size: 25px;
+  font-weight: 900;
+  text-shadow: 0 2px #b63f00;
 }
 .reward-collection {
   min-height: 0;
@@ -667,35 +992,54 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 }
 .reward-card-previews {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 7px;
-  padding: 7px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px;
+  padding: 8px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #5ea4ea #d8f1ff;
 }
 .reward-card-preview {
   position: relative;
   min-width: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 3px;
-  padding: 5px;
-  border-radius: 14px;
-  border: 3px solid #9ed0ff;
-  background: #fff;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  padding: 3px;
+  border-radius: 10px;
+  border: 2px solid #9ed0ff;
+  background: linear-gradient(#ffffff, #eef8ff);
   color: #07336d;
   font-weight: 900;
-  box-shadow: 0 3px 0 #0001;
+  box-shadow: 0 2px 0 #0001;
 }
-.reward-card-preview span {
-  font-size: 13px;
-  line-height: 1;
+.reward-card-preview.newest {
+  border-color: #ffbd23;
+  box-shadow: 0 0 0 4px #fff2a8, 0 5px 0 #d79512;
+  animation: cardPrizeIn .7s cubic-bezier(.2, 1.35, .35, 1) both;
+}
+.reward-card-preview.newest::after {
+  content: "NEW";
+  position: absolute;
+  right: -5px;
+  top: -9px;
+  padding: 2px 7px 4px;
+  border-radius: 999px;
+  background: #ff6d00;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 11px;
+  font-weight: 900;
 }
 .reward-card-preview img {
   width: 100%;
-  height: 44px;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
   object-position: center;
-  border-radius: 10px;
-  border: 2px solid #e6f4ff;
+  border-radius: 7px;
+  border: 0;
+  background: transparent;
 }
 .reward-card-empty {
   grid-column: 1 / -1;
@@ -868,6 +1212,39 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   border-color: #ffc6bd;
   background: #fff8f6;
 }
+.stamp-debug {
+  display: grid;
+  grid-template-columns: 1fr 86px;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 3px solid #ffd1c8;
+  background: #fff;
+  color: #07336d;
+  font-weight: 900;
+}
+.stamp-debug span {
+  font-size: 16px;
+}
+.stamp-debug input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 3px solid #9fd7ff;
+  color: #3a1d00;
+  background: #f7fcff;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+}
+.stamp-debug small {
+  grid-column: 1 / -1;
+  color: #6b342f;
+  font-size: 11px;
+  line-height: 1.15;
+}
 .reset-stamps {
   min-height: 62px;
   display: grid;
@@ -882,6 +1259,11 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   text-align: left;
   font-weight: 900;
   box-shadow: 0 3px 0 #0001;
+}
+.reset-reward-cards {
+  border-color: #ffbf64;
+  color: #8a3b00;
+  background: #fffaf0;
 }
 .reset-stamps span {
   grid-row: 1 / 3;
@@ -935,6 +1317,50 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   0% { opacity: 0; transform: scale(.2) rotate(-20deg); }
   45% { opacity: 1; transform: scale(1.15) rotate(8deg); }
   100% { opacity: 0; transform: scale(.7) rotate(18deg); }
+}
+@keyframes giftLidOpen {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  55% { opacity: 1; transform: translate(-20px, -62px) rotate(-24deg); }
+  100% { opacity: 0; transform: translate(-26px, -76px) rotate(-30deg); }
+}
+@keyframes giftBoxSink {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(18px) scale(.9); opacity: 0; }
+}
+@keyframes giftTrainPop {
+  0% { opacity: .15; transform: translateY(26px) scale(.62); filter: brightness(1); }
+  58% { opacity: 1; transform: translateY(-10px) scale(1.08); filter: brightness(1.35); }
+  100% { opacity: 1; transform: translateY(-2px) scale(1); filter: brightness(1); }
+}
+@keyframes cardPrizeIn {
+  0% { opacity: 0; transform: translateY(-34px) scale(.78) rotate(-3deg); }
+  72% { opacity: 1; transform: translateY(4px) scale(1.06) rotate(1deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes openingSparkle {
+  0%, 100% { transform: scale(.72) rotate(0deg); opacity: .45; }
+  50% { transform: scale(1.08) rotate(12deg); opacity: 1; }
+}
+@keyframes rewardRays {
+  0% { opacity: 0; transform: scale(.45) rotate(0deg); }
+  100% { opacity: .58; transform: scale(1.12) rotate(16deg); }
+}
+@keyframes rewardCardRise {
+  0% { opacity: 0; transform: translateY(92px) scale(.58) rotate(-3deg); }
+  45% { opacity: 1; transform: translateY(-24px) scale(1.04) rotate(1deg); }
+  100% { opacity: 1; transform: translateY(-8px) scale(1) rotate(0deg); }
+}
+@keyframes shutterOpen {
+  0% { height: 108px; opacity: 1; }
+  100% { height: 18px; opacity: .86; }
+}
+@keyframes giftGlow {
+  0% { opacity: 0; transform: scale(.65); }
+  100% { opacity: .92; transform: scale(1); }
+}
+@keyframes doneButtonIn {
+  0% { transform: translateY(12px) scale(.94); }
+  100% { transform: none; }
 }
 @media (max-width: 360px) {
   .topbar { grid-template-columns: 1fr; }

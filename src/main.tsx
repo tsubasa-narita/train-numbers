@@ -46,6 +46,11 @@ type QuizState = {
   status: 'answering' | 'correct' | 'incorrect' | 'done';
 };
 
+type RewardUnlock = {
+  cardIndex: number;
+  totalStars: number;
+};
+
 const STORAGE_KEY = 'ressha_kazu_progress';
 const HOME_BACKGROUND = `${import.meta.env.BASE_URL}images/ui/home-background.png`;
 const CONDUCTOR_BOY = `${import.meta.env.BASE_URL}images/ui/conductor-boy-home.png`;
@@ -238,7 +243,7 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
   return next;
 }
 
-function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'resetStamps' } | { type: 'finish'; quiz: QuizState }) {
+function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'resetStamps' } | { type: 'setStamps'; totalStars: number } | { type: 'finish'; quiz: QuizState }) {
   if (action.type === 'toggleVoice') {
     const nextVoice = !progress.settings.voiceEnabled;
     return { ...progress, settings: { ...progress.settings, voiceEnabled: nextVoice, soundEnabled: nextVoice } };
@@ -250,6 +255,10 @@ function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | {
   if (action.type === 'resetStamps') {
     return { ...progress, totalStars: 0, unlockedTrainIds: unlockedIds(0), lastPlayedAt: new Date().toISOString() };
   }
+  if (action.type === 'setStamps') {
+    const totalStars = Math.max(0, Math.floor(action.totalStars));
+    return { ...progress, totalStars, unlockedTrainIds: unlockedIds(totalStars), lastPlayedAt: new Date().toISOString() };
+  }
   return completeSession(progress, action.quiz);
 }
 
@@ -257,6 +266,7 @@ function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [progress, dispatch] = useReducer(progressReducer, undefined, loadProgress);
   const [quiz, setQuiz] = useState<QuizState | null>(null);
+  const [pendingReward, setPendingReward] = useState<RewardUnlock | null>(null);
   const voice = progress.settings.voiceEnabled;
   const effects = progress.settings.effectsEnabled;
 
@@ -282,8 +292,18 @@ function App() {
           if (!latest) return latest;
           if (latest.index === latest.questions.length - 1) {
             const done = { ...latest, status: 'done' as const };
+            const earnedRewardStamp = !done.missed.some(Boolean);
+            const nextTotalStars = progress.totalStars + (earnedRewardStamp ? 1 : 0);
             dispatch({ type: 'finish', quiz: done });
-            if (!done.missed.some(Boolean)) ping('star', effects);
+            if (earnedRewardStamp) {
+              ping('star', effects);
+              if (nextTotalStars > 0 && nextTotalStars % REWARD_CARD_SIZE === 0) {
+                const cardIndex = Math.min(REWARD_CARDS.length - 1, Math.floor(nextTotalStars / REWARD_CARD_SIZE) - 1);
+                window.setTimeout(() => {
+                  setPendingReward({ cardIndex, totalStars: nextTotalStars });
+                }, 2000);
+              }
+            }
             return done;
           }
           const moved = { ...latest, index: latest.index + 1, selected: null, status: 'answering' as const };
@@ -329,12 +349,29 @@ function App() {
           ) : tab === 'practice' ? (
             <Practice progress={progress} onStart={() => startQuiz('practice')} />
           ) : tab === 'settings' ? (
-            <SettingsPanel settings={progress.settings} onChange={(settings) => dispatch({ type: 'updateSettings', settings })} onResetStamps={() => dispatch({ type: 'resetStamps' })} />
+            <SettingsPanel
+              settings={progress.settings}
+              totalStars={progress.totalStars}
+              onChange={(settings) => dispatch({ type: 'updateSettings', settings })}
+              onResetStamps={() => dispatch({ type: 'resetStamps' })}
+              onSetStamps={(totalStars) => dispatch({ type: 'setStamps', totalStars })}
+            />
           ) : (
             <RewardPanel progress={progress} sound={effects} />
           )}
         </div>
         <BottomTabs active={tab} onTab={goTab} />
+        {pendingReward && (
+          <RewardOpening
+            reward={pendingReward}
+            sound={effects}
+            onDone={() => {
+              setPendingReward(null);
+              setQuiz(null);
+              setTab('reward');
+            }}
+          />
+        )}
       </section>
     </main>
   );
@@ -510,6 +547,58 @@ function Practice({ progress, onStart }: { progress: Progress; onStart: () => vo
   );
 }
 
+function RewardOpening({ reward, sound, onDone }: { reward: RewardUnlock; sound: boolean; onDone: () => void }) {
+  const [opened, setOpened] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const card = REWARD_CARDS[reward.cardIndex] ?? REWARD_CARDS[REWARD_CARDS.length - 1];
+  const open = () => {
+    ping('star', sound);
+    setOpened(true);
+    window.setTimeout(() => setRevealed(true), 950);
+  };
+
+  return (
+    <div className={`reward-opening ${opened ? 'is-open' : ''} ${revealed ? 'is-revealed' : ''}`} role="dialog" aria-modal="true" aria-label="ごほうびカードをひらく">
+      <div className="reward-opening-sky" aria-hidden="true" />
+      <div className="reward-opening-title">
+        <small>{reward.totalStars}こ たまったよ!</small>
+        <strong>ごほうび とうじょう!</strong>
+      </div>
+      <div className="reward-opening-stage">
+        <div className="reward-opening-rays" aria-hidden="true" />
+        <div className="reward-opening-card" aria-hidden={!opened}>
+          <img src={card.image} alt="" />
+          <span>{card.title}</span>
+        </div>
+        <div className="gift-station" aria-hidden="true">
+          <div className="gift-station-roof"><span>★</span></div>
+          <div className="gift-shutter" />
+          <div className="gift-glow" />
+          <div className="gift-base" />
+        </div>
+      </div>
+      <div className="reward-opening-copy">
+        {opened ? (
+          <>
+            <strong>{card.title}</strong>
+            <span>カードを ゲット!</span>
+          </>
+        ) : (
+          <>
+            <strong>なにが でるかな?</strong>
+            <span>ボタンを おしてね</span>
+          </>
+        )}
+      </div>
+      {opened ? (
+        <button className="reward-opening-done" onClick={onDone} disabled={!revealed}>カードを みる</button>
+      ) : (
+        <button className="reward-opening-button" onClick={open}>あける</button>
+      )}
+    </div>
+  );
+}
+
 function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }) {
   const earnedCards = Math.min(REWARD_CARDS.length, Math.floor(progress.totalStars / REWARD_CARD_SIZE));
   const [previewCard, setPreviewCard] = useState<number | null>(null);
@@ -553,7 +642,6 @@ function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }
             previewCards.map((card, index) => (
               <button key={card.title} className="reward-card-preview" onClick={() => { ping('tap', sound); setPreviewCard(index); }} aria-label={`${card.title} のごほうびカードをおおきくみる`}>
                 <img src={card.image} alt="" />
-                <span>{card.title}</span>
               </button>
             ))
           ) : (
@@ -575,7 +663,7 @@ function RewardPanel({ progress, sound }: { progress: Progress; sound: boolean }
   );
 }
 
-function SettingsPanel({ settings, onChange, onResetStamps }: { settings: Settings; onChange: (settings: Partial<Settings>) => void; onResetStamps: () => void }) {
+function SettingsPanel({ settings, totalStars, onChange, onResetStamps, onSetStamps }: { settings: Settings; totalStars: number; onChange: (settings: Partial<Settings>) => void; onResetStamps: () => void; onSetStamps: (totalStars: number) => void }) {
   const tileOptions: { value: TilePattern; label: string; hint: string }[] = [
     { value: 'fixed', label: 'いつも同じ', hint: '見やすくならべる' },
     { value: 'shuffle', label: 'まぜる', hint: '写真の大きさを少し変える' },
@@ -631,6 +719,24 @@ function SettingsPanel({ settings, onChange, onResetStamps }: { settings: Settin
       </section>
       <section className="setting-group danger">
         <h2>ごほうびカード</h2>
+        <label className="stamp-debug">
+          <span>いまの スタンプ</span>
+          <input
+            type="number"
+            min="0"
+            max="999"
+            step="1"
+            value={totalStars}
+            onChange={(event) => onSetStamps(Number(event.target.value))}
+            aria-label="スタンプ数を変更"
+          />
+          <small>デバッグ用</small>
+        </label>
+        <button className="reset-stamps reset-reward-cards" onClick={() => { if (window.confirm('あつめた ごほうびカードを ぜんぶ けします。スタンプも 0こに もどります。よろしいですか?')) onResetStamps(); }}>
+          <span>🎟️</span>
+          <strong>ごほうびカードを けす</strong>
+          <small>あつめたカードと スタンプを 0こに もどす</small>
+        </button>
         <button className="reset-stamps" onClick={confirmResetStamps}>
           <span>🧹</span>
           <strong>スタンプを けす</strong>
