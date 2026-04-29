@@ -253,6 +253,9 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   padding: 5px;
   background: linear-gradient(#dff5ff, #ffffff);
   box-shadow: 0 4px 0 #0001;
+  position: relative;
+  align-content: center;
+  gap: 6px;
 }
 .photo-visual:has(.count-1) {
   min-height: 156px;
@@ -280,6 +283,35 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   align-items: stretch;
   justify-content: center;
 }
+.count-assist {
+  justify-self: end;
+  min-width: 74px;
+  padding: 3px 10px 5px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: #174fb2;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  box-shadow: 0 3px 0 #0002;
+}
+.count-assist span {
+  color: #ffe36f;
+  font-size: 24px;
+  text-shadow: 0 2px #d66b00;
+}
+.train-card {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border-radius: 12px;
+  background: transparent;
+  position: relative;
+  display: block;
+  isolation: isolate;
+}
 .train-card-grid img {
   width: 100%;
   aspect-ratio: 3 / 4;
@@ -289,6 +321,47 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   border-radius: 12px;
   box-shadow: 0 3px 0 #0002;
   background: #eef8ff;
+}
+.train-card::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 9px;
+  background: #174fb233;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.train-card.is-selected {
+  transform: translateY(-2px);
+}
+.train-card.is-selected img {
+  border-color: #ffe36f;
+  box-shadow: 0 0 0 4px #174fb2, 0 5px 0 #0002;
+}
+.train-card.is-selected::after {
+  opacity: 1;
+}
+.selection-badge {
+  position: absolute;
+  right: -4px;
+  top: -8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 4px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: #ff6d00;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 4px 0 #0002;
+  text-shadow: 0 2px #a73700;
+  animation: badgePop .18s ease-out;
 }
 .train-card-grid.count-1,
 .train-card-grid.count-2,
@@ -1290,6 +1363,10 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 @keyframes wave { 50% { transform: rotate(-5deg) translateY(-2px); } }
 @keyframes bounce { 50% { transform: translateY(-8px) scale(1.03); } }
 @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@keyframes badgePop {
+  0% { transform: scale(.65); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
 @keyframes stampHit {
   0% { opacity: 0; transform: translateY(-70px) scale(1.8) rotate(-12deg); filter: drop-shadow(0 22px 0 #0003); }
   54% { opacity: 1; transform: translateY(4px) scale(.86) rotate(4deg); filter: drop-shadow(0 2px 0 #0002); }

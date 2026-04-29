@@ -457,16 +457,45 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound, tilePattern }: { quiz: Qui
 }
 
 function VisualQuestion({ question, tilePattern }: { question: Question; tilePattern: TilePattern }) {
+  const [selectedTrainIds, setSelectedTrainIds] = useState<string[]>([]);
   const layoutClass = tilePattern === 'fixed' ? 'layout-fixed' : tilePattern === 'shuffle' ? 'layout-shuffle' : `layout-mixed layout-${(question.correctNum + question.id.length) % 3}`;
+  useEffect(() => setSelectedTrainIds([]), [question.id]);
+
+  const toggleTrain = (trainId: string) => {
+    setSelectedTrainIds((current) => (
+      current.includes(trainId) ? current.filter((id) => id !== trainId) : [...current, trainId]
+    ));
+  };
+
   return (
     <div className="visual photo-visual">
+      <div className="count-assist" aria-live="polite">
+        <span>{selectedTrainIds.length}</span> / {question.correctNum}
+      </div>
       <div className={`train-card-grid count-${question.correctNum} ${layoutClass}`} aria-label={`${question.correctNum}だいの でんしゃ`}>
         {question.trains.map((train) => (
-          <img key={`${question.id}-${train.id}`} src={trainImageUrl(train.image)} alt={`${train.displayName} ${train.model}`} title={`${train.displayName} ${train.model}`} />
+          <button
+            key={`${question.id}-${train.id}`}
+            type="button"
+            className={`train-card ${selectedTrainIds.includes(train.id) ? 'is-selected' : ''}`}
+            onClick={() => toggleTrain(train.id)}
+            aria-pressed={selectedTrainIds.includes(train.id)}
+            aria-label={`${train.displayName} ${train.model} ${selectedTrainIds.includes(train.id) ? `${selectedTrainIds.indexOf(train.id) + 1}番目` : '未選択'}`}
+          >
+            <img src={trainImageUrl(train.image)} alt="" title={`${train.displayName} ${train.model}`} />
+            {selectedTrainIds.includes(train.id) && (
+              <span className="selection-badge" aria-hidden="true">{circledNumber(selectedTrainIds.indexOf(train.id) + 1)}</span>
+            )}
+          </button>
         ))}
       </div>
     </div>
   );
+}
+
+function circledNumber(num: number) {
+  const circled = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
+  return circled[num - 1] ?? String(num);
 }
 
 function TrainLine({ count, tone, compact = false }: { count: number; tone: string; compact?: boolean }) {
