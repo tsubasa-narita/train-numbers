@@ -18,4 +18,11 @@ export const QUIZ_TRAINS: QuizTrain[] = [
   { id: 'tsubasa', displayName: 'つばさ', model: 'E8系', memo: '山形新幹線「つばさ」の最新形式', image: 'tsubasa_e8.png' },
   { id: 'saphir_odoriko', displayName: 'サフィールおどりこ', model: 'E261系', memo: 'サフィール踊り子', image: 'saphir_odoriko_e261.png' },
   { id: 'narita_express', displayName: 'なりたエクスプレス', model: 'E259系', memo: '成田エクスプレス', image: 'narita_express_e259.png' },
+  { id: 'saikyo_e233_7000', displayName: 'さいきょうせん', model: 'E233系7000番台', memo: '埼京線の主力電車', image: 'saikyo_e233_7000.png' },
+  { id: 'joban_e531', displayName: 'じょうばんせん', model: 'E531系', memo: '常磐線の交直流電車', image: 'joban_e531.png' },
+  { id: 'marunouchi_2000', displayName: 'まるノうちせん', model: '2000系', memo: '東京メトロ丸ノ内線の新しい電車', image: 'marunouchi_2000.png' },
+  { id: 'sl_taiju', displayName: 'SLたいじゅ', model: 'C11形', memo: '東武鉄道のSL大樹', image: 'sl_taiju.png' },
+  { id: 'nambu_e233_8000', displayName: 'なんぶせん', model: 'E233系8000番台', memo: '南武線の電車', image: 'nambu_e233_8000.png' },
+  { id: 'keihin_tohoku_e233_1000', displayName: 'けいひんとうほくせん', model: 'E233系1000番台', memo: '京浜東北線の電車', image: 'keihin_tohoku_e233_1000.png' },
+  { id: 'laview_001', displayName: 'ラビュー', model: '001系', memo: '西武鉄道の特急Laview', image: 'laview_001.png' },
 ];

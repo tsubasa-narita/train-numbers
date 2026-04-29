@@ -65,6 +65,10 @@ const REWARD_CARDS = [
   { title: 'さいきょうせん', image: `${import.meta.env.BASE_URL}images/ui/reward-card-saikyo.png` },
   { title: 'よこすかせん', image: `${import.meta.env.BASE_URL}images/ui/reward-card-yokosuka.png` },
   { title: 'しょうなんしんじゅく', image: `${import.meta.env.BASE_URL}images/ui/reward-card-shonan-shinjuku.png` },
+  { title: 'カシオペア', image: `${import.meta.env.BASE_URL}images/ui/reward-card-cassiopeia.png` },
+  { title: 'ゆふいんの森', image: `${import.meta.env.BASE_URL}images/ui/reward-card-yufuin-no-mori.png` },
+  { title: 'あそぼーい', image: `${import.meta.env.BASE_URL}images/ui/reward-card-asoboy.png` },
+  { title: 'かいじ・あずさ', image: `${import.meta.env.BASE_URL}images/ui/reward-card-kaiji-azusa.png` },
 ];
 
 const DEFAULT_SETTINGS: Settings = {
