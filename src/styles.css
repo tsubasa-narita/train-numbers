@@ -1578,6 +1578,67 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
     font-size: 15px;
     padding: 5px 15px;
   }
+  .reward {
+    grid-template-rows: 184px 76px minmax(0, 1fr);
+    gap: 7px;
+    padding: 0 6px 4px;
+  }
+  .reward-showcase {
+    grid-template-columns: minmax(0, 1fr) 92px;
+    align-items: center;
+    gap: 6px;
+  }
+  .reward-card {
+    width: 100%;
+    align-self: center;
+    padding: 8px;
+    border-width: 3px;
+    border-radius: 17px;
+  }
+  .reward-card-title {
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px 7px;
+    font-size: 17px;
+    line-height: 1.05;
+    white-space: nowrap;
+  }
+  .reward-card-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    padding-top: 8px;
+  }
+  .reward-card-grid span {
+    min-width: 0;
+    border-width: 2px;
+    font-size: 21px;
+  }
+  .reward-gift {
+    min-height: 112px;
+  }
+  .reward-gift img {
+    width: 92px;
+    height: 92px;
+    border-radius: 20px;
+    border-width: 3px;
+  }
+  .reward-message {
+    width: 88%;
+    border-radius: 22px;
+    font-size: 22px;
+  }
+  .reward-message b {
+    font-size: 34px;
+  }
+  .reward-collection {
+    grid-template-rows: 28px 1fr;
+    border-radius: 16px;
+  }
+  .reward-collection h2 {
+    min-width: 190px;
+    padding: 4px 12px;
+    font-size: 16px;
+  }
   .tabs {
     height: 82px;
     gap: 4px;
