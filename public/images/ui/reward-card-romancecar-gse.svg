@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff4d36"/><stop offset=".5" stop-color="#ffb25a"/><stop offset="1" stop-color="#fff4bd"/></linearGradient></defs>
+  <rect width="720" height="960" rx="54" fill="#8a1208"/>
+  <rect x="28" y="28" width="664" height="904" rx="44" fill="url(#bg)" stroke="#fff" stroke-width="18"/>
+  <g fill="#fff" stroke="#9d180b" stroke-width="8" paint-order="stroke">
+    <text x="360" y="108" text-anchor="middle" font-family="sans-serif" font-size="62" font-weight="900">ごほうび</text>
+    <text x="360" y="836" text-anchor="middle" font-family="sans-serif" font-size="66" font-weight="900">ロマンスカー GSE</text>
+  </g>
+  <rect x="76" y="154" width="568" height="568" rx="34" fill="#ffffffd9" stroke="#fff" stroke-width="12"/>
+  <image href="../trains/romancecar_gse.png" x="106" y="184" width="508" height="508" preserveAspectRatio="xMidYMid meet"/>
+  <text x="360" y="890" text-anchor="middle" font-family="sans-serif" font-size="34" font-weight="900" fill="#8a1208">70000形</text>
+  <g fill="#fff176"><text x="88" y="126" font-size="54">★</text><text x="596" y="782" font-size="54">★</text><text x="108" y="790" font-size="38">★</text></g>
+</svg>

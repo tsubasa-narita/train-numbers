@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".5" stop-color="#d7f5ff"/><stop offset="1" stop-color="#79d36b"/></linearGradient></defs>
+  <rect width="720" height="960" rx="54" fill="#153d2d"/>
+  <rect x="28" y="28" width="664" height="904" rx="44" fill="url(#bg)" stroke="#fff" stroke-width="18"/>
+  <g fill="#fff" stroke="#15613c" stroke-width="8" paint-order="stroke">
+    <text x="360" y="108" text-anchor="middle" font-family="sans-serif" font-size="62" font-weight="900">ごほうび</text>
+    <text x="360" y="836" text-anchor="middle" font-family="sans-serif" font-size="70" font-weight="900">パンダくろしお</text>
+  </g>
+  <rect x="76" y="154" width="568" height="568" rx="34" fill="#ffffffd9" stroke="#fff" stroke-width="12"/>
+  <image href="../trains/panda_kuroshio_287.png" x="106" y="184" width="508" height="508" preserveAspectRatio="xMidYMid meet"/>
+  <text x="360" y="890" text-anchor="middle" font-family="sans-serif" font-size="34" font-weight="900" fill="#15613c">287系</text>
+  <g fill="#ffd84a"><text x="88" y="126" font-size="54">★</text><text x="596" y="782" font-size="54">★</text><text x="108" y="790" font-size="38">★</text></g>
+</svg>

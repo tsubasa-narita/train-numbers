@@ -31,8 +31,8 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   height: calc(100% - 88px);
   padding-top: 4px;
 }
-.home-screen,
-.quiz-screen { overflow: hidden; }
+.home-screen { overflow: hidden; }
+.quiz-screen { overflow-y: auto; }
 .phone.is-quiz .screen {
   height: calc(100% - 92px);
   padding: 4px 8px 8px;
@@ -125,6 +125,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .level-card.yellow { background: linear-gradient(110deg, #fff8e0 0 42%, #ffe9a1 42% 100%); box-shadow: inset 0 0 0 3px #ffad12, 0 5px 0 #0002; }
 .level-card.green { background: linear-gradient(110deg, #f4ffe8 0 42%, #dff5bd 42% 100%); box-shadow: inset 0 0 0 3px #55b82e, 0 5px 0 #0002; }
 .level-card.blue { background: linear-gradient(110deg, #f0fbff 0 42%, #d2efff 42% 100%); box-shadow: inset 0 0 0 3px #1680e8, 0 5px 0 #0002; }
+.level-card.purple { background: linear-gradient(110deg, #fff6ff 0 42%, #eadbff 42% 100%); box-shadow: inset 0 0 0 3px #8e44ad, 0 5px 0 #0002; }
 .home .level-card {
   opacity: 1;
   width: min(100%, 324px);
@@ -138,6 +139,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .home .level-card.yellow { background: linear-gradient(110deg, #fffdf2 0 42%, #ffe9a1 42% 100%) !important; }
 .home .level-card.green { background: linear-gradient(110deg, #fbfff6 0 42%, #dff5bd 42% 100%) !important; }
 .home .level-card.blue { background: linear-gradient(110deg, #f6fcff 0 42%, #d2efff 42% 100%) !important; }
+.home .level-card.purple { background: linear-gradient(110deg, #fff8ff 0 42%, #eadbff 42% 100%) !important; }
 .level-card.future {
   background: linear-gradient(110deg, #f8fafc 0 42%, #dbe4ef 42% 100%);
   box-shadow: inset 0 0 0 3px #94a3b8, 0 5px 0 #0002;
@@ -224,6 +226,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .level-text strong { display: block; font-size: clamp(38px, 13cqw, 54px); line-height: .82; color: #ff6d00; -webkit-text-stroke: 2px #fff; }
 .level-card.green .level-text strong { color: #39a315; }
 .level-card.blue .level-text strong { color: #1265d9; }
+.level-card.purple .level-text strong { color: #8e44ad; }
 .level-text small { display: block; font-size: 16px; margin: 2px 0 4px; color: #362100; font-weight: 900; }
 .level-text b { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 3px; border-radius: 10px; background: #fff; color: inherit; }
 .level-card i {
@@ -232,8 +235,36 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   z-index: 1;
 }
 .mini { color: #07336d; background: #fff9; border-radius: 999px; padding: 8px 14px; text-align: center; font-weight: 900; }
+.quiz-nav {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 92px;
+  align-items: center;
+  gap: 6px;
+  margin: -2px 0 4px;
+}
+.quiz-home-button {
+  min-width: 0;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 8px 6px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: #174fb2;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 3px 0 #063e8b;
+}
+.quiz-home-button span {
+  font-size: 18px;
+  line-height: 1;
+}
 .progress-stars {
-  width: 64%; margin: -2px auto 4px; background: #fffdf7; border: 3px solid #ffdf92; border-radius: 999px; min-height: 34px;
+  width: 100%; margin: 0 auto; background: #fffdf7; border: 3px solid #ffdf92; border-radius: 999px; min-height: 34px;
   display: flex; align-items: center; justify-content: space-evenly; box-shadow: 0 4px 0 #0001;
 }
 .progress-stars span { color: #999; font-size: 24px; }
@@ -275,6 +306,19 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .photo-visual:has(.count-9),
 .photo-visual:has(.count-10) {
   min-height: 252px;
+}
+.photo-visual:has(.count-11),
+.photo-visual:has(.count-12),
+.photo-visual:has(.count-13),
+.photo-visual:has(.count-14),
+.photo-visual:has(.count-15),
+.photo-visual:has(.count-16),
+.photo-visual:has(.count-17),
+.photo-visual:has(.count-18),
+.photo-visual:has(.count-19),
+.photo-visual:has(.count-20) {
+  min-height: 546px;
+  align-content: start;
 }
 .train-card-grid {
   width: 100%;
@@ -394,6 +438,45 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .train-card-grid.count-9,
 .train-card-grid.count-10 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.train-card-grid.count-11,
+.train-card-grid.count-12,
+.train-card-grid.count-13,
+.train-card-grid.count-14,
+.train-card-grid.count-15,
+.train-card-grid.count-16,
+.train-card-grid.count-17,
+.train-card-grid.count-18,
+.train-card-grid.count-19,
+.train-card-grid.count-20 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.hard-course {
+  padding-bottom: 14px;
+}
+.hard-course .progress-stars {
+  width: 58%;
+}
+.hard-course .question-card {
+  min-height: 76px;
+}
+.hard-course .photo-visual {
+  margin-top: 2px;
+  padding: 7px;
+}
+.hard-course .count-assist {
+  position: sticky;
+  top: 3px;
+  z-index: 3;
+}
+.hard-course .choice-grid {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  padding: 8px 0 10px;
+  margin-bottom: 0;
+  background: linear-gradient(#bff2ff00, #bff2ff 28%, #bff2ff);
 }
 .train-card-grid.layout-shuffle,
 .train-card-grid.layout-mixed.layout-1 {
@@ -1676,8 +1759,20 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
     font-size: 18px;
   }
   .progress-stars {
-    width: 72%;
     min-height: 32px;
+  }
+  .quiz-nav {
+    grid-template-columns: 82px minmax(0, 1fr) 82px;
+    gap: 5px;
+  }
+  .quiz-home-button {
+    min-height: 32px;
+    padding: 4px 6px 5px;
+    border-width: 2px;
+    font-size: 12px;
+  }
+  .quiz-home-button span {
+    font-size: 16px;
   }
   .question-card {
     min-height: 76px;
@@ -1705,6 +1800,16 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   .photo-visual:has(.count-8),
   .photo-visual:has(.count-9),
   .photo-visual:has(.count-10) { min-height: 266px; }
+  .photo-visual:has(.count-11),
+  .photo-visual:has(.count-12),
+  .photo-visual:has(.count-13),
+  .photo-visual:has(.count-14),
+  .photo-visual:has(.count-15),
+  .photo-visual:has(.count-16),
+  .photo-visual:has(.count-17),
+  .photo-visual:has(.count-18),
+  .photo-visual:has(.count-19),
+  .photo-visual:has(.count-20) { min-height: 602px; }
   .train-card-grid {
     gap: 5px;
   }
@@ -1714,6 +1819,20 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   .train-card-grid.count-10 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     max-width: 92%;
+    margin: 0 auto;
+  }
+  .train-card-grid.count-11,
+  .train-card-grid.count-12,
+  .train-card-grid.count-13,
+  .train-card-grid.count-14,
+  .train-card-grid.count-15,
+  .train-card-grid.count-16,
+  .train-card-grid.count-17,
+  .train-card-grid.count-18,
+  .train-card-grid.count-19,
+  .train-card-grid.count-20 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 94%;
     margin: 0 auto;
   }
   .train-card-grid.layout-mixed.layout-2 {

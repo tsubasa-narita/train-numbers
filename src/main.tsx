@@ -4,7 +4,7 @@ import { QUIZ_TRAINS, type QuizTrain } from './data/quizTrains';
 import './styles.css';
 
 type Tab = 'home' | 'practice' | 'reward' | 'settings';
-type Mode = 'level1' | 'level2' | 'level3' | 'practice';
+type Mode = 'level1' | 'level2' | 'level3' | 'level4' | 'practice';
 type Pattern = 'trainCount';
 type TilePattern = 'fixed' | 'shuffle' | 'mixed';
 type QuestionRange = 'level' | '1-3' | '4-6' | '7-10' | '1-10';
@@ -17,9 +17,11 @@ type Settings = {
   questionRange: QuestionRange;
 };
 
+type LevelKey = '1' | '2' | '3' | '4';
+
 type Progress = {
   totalStars: number;
-  levelStats: Record<'1' | '2' | '3', { playCount: number; maxStars: number; hasThreeStar: boolean }>;
+  levelStats: Record<LevelKey, { playCount: number; maxStars: number; hasThreeStar: boolean }>;
   practiceStats: { playCount: number; totalCorrect: number };
   unlockedTrainIds: string[];
   settings: Settings;
@@ -69,6 +71,16 @@ const REWARD_CARDS = [
   { title: 'ゆふいんの森', image: `${import.meta.env.BASE_URL}images/ui/reward-card-yufuin-no-mori.png` },
   { title: 'あそぼーい', image: `${import.meta.env.BASE_URL}images/ui/reward-card-asoboy.png` },
   { title: 'かいじ・あずさ', image: `${import.meta.env.BASE_URL}images/ui/reward-card-kaiji-azusa.png` },
+  { title: 'のぞみ', image: `${import.meta.env.BASE_URL}images/ui/reward-card-nozomi.svg` },
+  { title: 'ドクターイエロー', image: `${import.meta.env.BASE_URL}images/ui/reward-card-doctor-yellow.svg` },
+  { title: 'スペーシア X', image: `${import.meta.env.BASE_URL}images/ui/reward-card-spacia-x.svg` },
+  { title: 'ロマンスカー GSE', image: `${import.meta.env.BASE_URL}images/ui/reward-card-romancecar-gse.svg` },
+  { title: 'ラピート', image: `${import.meta.env.BASE_URL}images/ui/reward-card-rapit.svg` },
+  { title: 'スカイライナー', image: `${import.meta.env.BASE_URL}images/ui/reward-card-skyliner.svg` },
+  { title: 'パンダくろしお', image: `${import.meta.env.BASE_URL}images/ui/reward-card-panda-kuroshio.svg` },
+  { title: 'ハローキティ はるか', image: `${import.meta.env.BASE_URL}images/ui/reward-card-hello-kitty-haruka.svg` },
+  { title: 'アンパンマン列車', image: `${import.meta.env.BASE_URL}images/ui/reward-card-anpanman.svg` },
+  { title: 'ぎんざせん', image: `${import.meta.env.BASE_URL}images/ui/reward-card-ginza.svg` },
 ];
 
 const DEFAULT_SETTINGS: Settings = {
@@ -87,6 +99,7 @@ function defaultProgress(): Progress {
       '1': { playCount: 0, maxStars: 0, hasThreeStar: false },
       '2': { playCount: 0, maxStars: 0, hasThreeStar: false },
       '3': { playCount: 0, maxStars: 0, hasThreeStar: false },
+      '4': { playCount: 0, maxStars: 0, hasThreeStar: false },
     },
     practiceStats: { playCount: 0, totalCorrect: 0 },
     unlockedTrainIds: ['train-1', 'train-2', 'train-3'],
@@ -106,6 +119,10 @@ function loadProgress(): Progress {
     return {
       ...fallback,
       ...parsed,
+      levelStats: {
+        ...fallback.levelStats,
+        ...parsed.levelStats,
+      },
       settings: {
         ...DEFAULT_SETTINGS,
         soundEnabled: legacySound,
@@ -161,10 +178,12 @@ function rangeForMode(mode: Mode) {
   if (mode === 'level1') return [1, 2, 3];
   if (mode === 'level2') return [4, 5, 6];
   if (mode === 'level3') return [7, 8, 9, 10];
+  if (mode === 'level4') return [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
   return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 }
 
 function rangeForSetting(mode: Mode, questionRange: QuestionRange) {
+  if (mode === 'level4') return rangeForMode(mode);
   if (questionRange === '1-3') return [1, 2, 3];
   if (questionRange === '4-6') return [4, 5, 6];
   if (questionRange === '7-10') return [7, 8, 9, 10];
@@ -184,14 +203,26 @@ function pickN<T>(items: T[], count: number) {
   return shuffle(items).slice(0, count);
 }
 
+function pickNWithRepeats<T>(items: T[], count: number) {
+  const selected: T[] = [];
+  let pool = shuffle(items);
+  while (selected.length < count) {
+    if (pool.length === 0) pool = shuffle(items);
+    const next = pool.pop();
+    if (next) selected.push(next);
+  }
+  return selected;
+}
+
 function questionText() {
   return 'でんしゃは なんほん いる?';
 }
 
 function generateQuestions(mode: Mode, settings: Settings): Question[] {
   const range = rangeForSetting(mode, settings.questionRange);
+  const questionTotal = mode === 'level4' ? 1 : 3;
   let previousNum: number | null = null;
-  return Array.from({ length: 3 }, (_, index) => {
+  return Array.from({ length: questionTotal }, (_, index) => {
     const pattern: Pattern = 'trainCount';
     const candidates = previousNum === null ? range : range.filter((n) => n !== previousNum);
     const correctNum = pick(candidates);
@@ -204,8 +235,8 @@ function generateQuestions(mode: Mode, settings: Settings): Question[] {
       correctNum,
       choices,
       prompt: questionText(),
-      hint: '1だいずつ みて かぞえよう',
-      trains: pickN(QUIZ_TRAINS, correctNum),
+      hint: mode === 'level4' ? 'したまで ゆっくり みて 1だいずつ かぞえよう' : '1だいずつ みて かぞえよう',
+      trains: correctNum > QUIZ_TRAINS.length ? pickNWithRepeats(QUIZ_TRAINS, correctNum) : pickN(QUIZ_TRAINS, correctNum),
     };
   });
 }
@@ -233,7 +264,7 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
       totalCorrect: progress.practiceStats.totalCorrect + correctCount,
     };
   } else {
-    const level = quiz.mode.replace('level', '') as '1' | '2' | '3';
+    const level = quiz.mode.replace('level', '') as LevelKey;
     const stat = progress.levelStats[level];
     next.levelStats = {
       ...progress.levelStats,
@@ -278,7 +309,8 @@ function App() {
 
   const startQuiz = (mode: Mode) => {
     ping('tap', effects);
-    const nextQuiz = { mode, questions: generateQuestions(mode, progress.settings), index: 0, missed: [false, false, false], selected: null, status: 'answering' as const };
+    const questions = generateQuestions(mode, progress.settings);
+    const nextQuiz = { mode, questions, index: 0, missed: Array.from({ length: questions.length }, () => false), selected: null, status: 'answering' as const };
     setQuiz(nextQuiz);
     setTab(mode === 'practice' ? 'practice' : 'home');
     setTimeout(() => speak(nextQuiz.questions[0].prompt, voice), 150);
@@ -346,7 +378,7 @@ function App() {
             quiz.status === 'done' ? (
               <ResultScreen quiz={quiz} totalStars={progress.totalStars} sound={voice} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
             ) : (
-              <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} sound={voice} tilePattern={progress.settings.tilePattern} />
+              <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} onHome={() => goTab('home')} sound={voice} tilePattern={progress.settings.tilePattern} />
             )
           ) : tab === 'home' ? (
             <Home progress={progress} onStart={startQuiz} />
@@ -405,7 +437,7 @@ function Home({ onStart }: { progress: Progress; onStart: (mode: Mode) => void }
       <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} image="komachi.png" onClick={() => onStart('level1')} />
       <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} image="yokosuka_e235_1000.png" onClick={() => onStart('level2')} />
       <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} image="kagayaki_e7_w7.png" onClick={() => onStart('level3')} />
-      <FutureLevelCard />
+      <LevelCard tone="purple" title="11〜20" subtitle="1もんだけ じっくり" nums={[11, 15, 20]} image="laview_001.png" onClick={() => onStart('level4')} />
     </div>
   );
 }
@@ -433,13 +465,20 @@ function ConductorBubble({ text }: { text: string }) {
   );
 }
 
-function QuizScreen({ quiz, onAnswer, onRetry, sound, tilePattern }: { quiz: QuizState; onAnswer: (choice: number) => void; onRetry: () => void; sound: boolean; tilePattern: TilePattern }) {
+function QuizScreen({ quiz, onAnswer, onRetry, onHome, sound, tilePattern }: { quiz: QuizState; onAnswer: (choice: number) => void; onRetry: () => void; onHome: () => void; sound: boolean; tilePattern: TilePattern }) {
   const q = quiz.questions[quiz.index];
+  const isHardCourse = quiz.mode === 'level4';
   useEffect(() => speak(q.prompt, sound), [q.id, q.prompt, sound]);
   return (
-    <div className="quiz">
-      <div className="progress-stars">
-        {[0, 1, 2].map((i) => <span key={i} className={i < quiz.index ? 'filled' : i === quiz.index && !quiz.missed[i] ? 'filled' : ''}>★</span>)}
+    <div className={`quiz ${isHardCourse ? 'hard-course' : ''}`}>
+      <div className="quiz-nav">
+        <button className="quiz-home-button" onClick={onHome} aria-label="ホームにもどる">
+          <span aria-hidden="true">🏠</span>
+          ホーム
+        </button>
+        <div className="progress-stars">
+          {quiz.questions.map((_, i) => <span key={i} className={i < quiz.index ? 'filled' : i === quiz.index && !quiz.missed[i] ? 'filled' : ''}>★</span>)}
+        </div>
       </div>
       <ConductorBubble text={q.hint} />
       <button className="question-card" onClick={() => speak(q.prompt, sound)}>
@@ -455,7 +494,7 @@ function QuizScreen({ quiz, onAnswer, onRetry, sound, tilePattern }: { quiz: Qui
         ))}
       </div>
       {quiz.status === 'incorrect' && <button className="retry" onClick={onRetry}>もういちど</button>}
-      <div className="question-count">🚩 もんだい {quiz.index + 1} / 3</div>
+      <div className="question-count">🚩 もんだい {quiz.index + 1} / {quiz.questions.length}</div>
     </div>
   );
 }
@@ -477,21 +516,26 @@ function VisualQuestion({ question, tilePattern }: { question: Question; tilePat
         <span>{selectedTrainIds.length}</span> / {question.correctNum}
       </div>
       <div className={`train-card-grid count-${question.correctNum} ${layoutClass}`} aria-label={`${question.correctNum}だいの でんしゃ`}>
-        {question.trains.map((train) => (
+        {question.trains.map((train, index) => {
+          const selectionId = `${train.id}-${index}`;
+          const selectedIndex = selectedTrainIds.indexOf(selectionId);
+          const isSelected = selectedIndex >= 0;
+          return (
           <button
-            key={`${question.id}-${train.id}`}
+            key={`${question.id}-${selectionId}`}
             type="button"
-            className={`train-card ${selectedTrainIds.includes(train.id) ? 'is-selected' : ''}`}
-            onClick={() => toggleTrain(train.id)}
-            aria-pressed={selectedTrainIds.includes(train.id)}
-            aria-label={`${train.displayName} ${train.model} ${selectedTrainIds.includes(train.id) ? `${selectedTrainIds.indexOf(train.id) + 1}番目` : '未選択'}`}
+            className={`train-card ${isSelected ? 'is-selected' : ''}`}
+            onClick={() => toggleTrain(selectionId)}
+            aria-pressed={isSelected}
+            aria-label={`${train.displayName} ${train.model} ${isSelected ? `${selectedIndex + 1}番目` : '未選択'}`}
           >
             <img src={trainImageUrl(train.image)} alt="" title={`${train.displayName} ${train.model}`} />
-            {selectedTrainIds.includes(train.id) && (
-              <span className="selection-badge" aria-hidden="true">{circledNumber(selectedTrainIds.indexOf(train.id) + 1)}</span>
+            {isSelected && (
+              <span className="selection-badge" aria-hidden="true">{circledNumber(selectedIndex + 1)}</span>
             )}
           </button>
-        ))}
+        );
+        })}
       </div>
     </div>
   );
@@ -807,6 +851,7 @@ function modeLabel(mode: Mode) {
   if (mode === 'level1') return '1〜3 はじめての かず';
   if (mode === 'level2') return '4〜6 すこしずつ チャレンジ';
   if (mode === 'level3') return '7〜10 しっかり かぞえよう';
+  if (mode === 'level4') return '11〜20 1もんチャレンジ';
   return 'れんしゅう';
 }
 
