@@ -630,6 +630,12 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
     radial-gradient(circle at 50% 40%, #8fe4ff 0 18%, transparent 48%),
     linear-gradient(180deg, #2b7be9 0%, #4fb5f4 58%, #d6fbff 100%);
 }
+.reward-opening.is-open {
+  background:
+    radial-gradient(circle at 50% 44%, #ffffff 0 8%, #fff2a8 9% 18%, transparent 42%),
+    radial-gradient(circle at 50% 40%, #8fe4ff 0 22%, transparent 52%),
+    linear-gradient(180deg, #1f70df 0%, #55bff6 58%, #e4fbff 100%);
+}
 .reward-opening::before,
 .reward-opening::after {
   content: "★";
@@ -658,6 +664,25 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
     radial-gradient(circle at 72% 58%, #fff7a3 0 3px, transparent 4px);
   pointer-events: none;
 }
+.reward-opening-sky::before,
+.reward-opening-sky::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 132px;
+  width: 360px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #ffffffcc 25%, #fff6a8 50%, #ffffffcc 75%, transparent);
+  opacity: 0;
+  transform-origin: 50% 50%;
+}
+.reward-opening.is-open .reward-opening-sky::before {
+  animation: platformBeamLeft 1.35s ease-out .12s both;
+}
+.reward-opening.is-open .reward-opening-sky::after {
+  animation: platformBeamRight 1.35s ease-out .18s both;
+}
 .reward-opening-title {
   position: relative;
   z-index: 1;
@@ -685,26 +710,68 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 }
 .reward-opening-rays {
   position: absolute;
-  width: 300px;
-  height: 300px;
+  width: 360px;
+  height: 360px;
   border-radius: 50%;
-  background: repeating-conic-gradient(from 0deg, #fff4a8 0 8deg, #fff0 8deg 16deg);
+  background:
+    radial-gradient(circle, #ffffffb8 0 12%, transparent 44%),
+    repeating-conic-gradient(from 0deg, #fff4a8 0 7deg, #fff0 7deg 14deg);
   opacity: 0;
   filter: blur(.3px);
   transform: scale(.5);
 }
 .reward-opening.is-open .reward-opening-rays {
-  animation: rewardRays .9s ease-out forwards;
+  animation: rewardRays 1.55s ease-out forwards;
 }
+.opening-confetti {
+  position: absolute;
+  inset: -20px 0 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+.opening-confetti span {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: 12px;
+  height: 18px;
+  border-radius: 3px;
+  background: #ff5a16;
+  opacity: 0;
+}
+.opening-confetti span:nth-child(3n) { background: #ffc91d; }
+.opening-confetti span:nth-child(3n + 1) { background: #38bdf8; }
+.opening-confetti span:nth-child(4n) { width: 14px; height: 14px; background: #8bd53f; }
+.opening-confetti span:nth-child(5n) { background: #ff5db1; }
+.reward-opening.is-open .opening-confetti span {
+  animation: confettiBurst 1.55s cubic-bezier(.12, .88, .18, 1) both;
+}
+.reward-opening.is-open .opening-confetti span:nth-child(1) { --x: -142px; --y: -188px; --r: -220deg; animation-delay: .28s; }
+.reward-opening.is-open .opening-confetti span:nth-child(2) { --x: -98px; --y: -224px; --r: 180deg; animation-delay: .34s; }
+.reward-opening.is-open .opening-confetti span:nth-child(3) { --x: -44px; --y: -196px; --r: -140deg; animation-delay: .26s; }
+.reward-opening.is-open .opening-confetti span:nth-child(4) { --x: 28px; --y: -226px; --r: 240deg; animation-delay: .38s; }
+.reward-opening.is-open .opening-confetti span:nth-child(5) { --x: 84px; --y: -196px; --r: -180deg; animation-delay: .3s; }
+.reward-opening.is-open .opening-confetti span:nth-child(6) { --x: 136px; --y: -170px; --r: 220deg; animation-delay: .36s; }
+.reward-opening.is-open .opening-confetti span:nth-child(7) { --x: -166px; --y: -78px; --r: 120deg; animation-delay: .48s; }
+.reward-opening.is-open .opening-confetti span:nth-child(8) { --x: 166px; --y: -88px; --r: -160deg; animation-delay: .44s; }
+.reward-opening.is-open .opening-confetti span:nth-child(9) { --x: -130px; --y: 28px; --r: 190deg; animation-delay: .58s; }
+.reward-opening.is-open .opening-confetti span:nth-child(10) { --x: 128px; --y: 24px; --r: -190deg; animation-delay: .54s; }
+.reward-opening.is-open .opening-confetti span:nth-child(11) { --x: -72px; --y: 76px; --r: 140deg; animation-delay: .64s; }
+.reward-opening.is-open .opening-confetti span:nth-child(12) { --x: 68px; --y: 86px; --r: -220deg; animation-delay: .6s; }
+.reward-opening.is-open .opening-confetti span:nth-child(13) { --x: -18px; --y: -256px; --r: 260deg; animation-delay: .5s; }
+.reward-opening.is-open .opening-confetti span:nth-child(14) { --x: 18px; --y: -258px; --r: -260deg; animation-delay: .56s; }
+.reward-opening.is-open .opening-confetti span:nth-child(15) { --x: -190px; --y: -144px; --r: 260deg; animation-delay: .42s; }
+.reward-opening.is-open .opening-confetti span:nth-child(16) { --x: 190px; --y: -132px; --r: -240deg; animation-delay: .46s; }
 .reward-opening-card {
   position: absolute;
-  z-index: 4;
-  width: min(76%, 282px);
+  z-index: 6;
+  width: min(82%, 296px);
   display: grid;
   gap: 8px;
   justify-items: center;
   opacity: 0;
-  transform: translateY(84px) scale(.64);
+  transform: translateY(120px) scale(.54) rotate(-4deg);
   filter: drop-shadow(0 12px 0 #0a3b8566);
 }
 .reward-opening-card img {
@@ -727,7 +794,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   font-weight: 900;
 }
 .reward-opening.is-open .reward-opening-card {
-  animation: rewardCardRise .95s cubic-bezier(.16, 1.18, .28, 1) forwards;
+  animation: rewardCardRise 1.35s cubic-bezier(.16, 1.18, .28, 1) .48s forwards;
 }
 .gift-station {
   position: relative;
@@ -736,6 +803,27 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   min-height: 260px;
   display: grid;
   place-items: end center;
+}
+.gift-station-sign {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  z-index: 5;
+  translate: -50% 0;
+  min-width: 178px;
+  padding: 5px 18px 7px;
+  border-radius: 999px;
+  border: 4px solid #fff;
+  background: linear-gradient(#fffbde, #ffe070);
+  color: #174caa;
+  box-shadow: 0 5px 0 #0d347144;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px #fff;
+}
+.reward-opening.is-open .gift-station-sign {
+  animation: stationSignPop .7s cubic-bezier(.2, 1.3, .3, 1) both;
 }
 .gift-station-roof {
   position: absolute;
@@ -765,6 +853,28 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   text-shadow: 0 2px #f28b00;
   font-size: 28px;
 }
+.gift-station-lights {
+  position: absolute;
+  z-index: 4;
+  top: 74px;
+  width: 72%;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.gift-station-lights i {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 20%, #ffef8a 45%, #ffb72e 72%, transparent 73%);
+  opacity: .5;
+  filter: drop-shadow(0 0 8px #ffdf64);
+}
+.reward-opening.is-open .gift-station-lights i {
+  animation: stationLight 1.3s ease-in-out .22s both;
+}
+.reward-opening.is-open .gift-station-lights i:nth-child(2) { animation-delay: .34s; }
+.reward-opening.is-open .gift-station-lights i:nth-child(3) { animation-delay: .46s; }
 .gift-shutter {
   position: absolute;
   z-index: 2;
@@ -779,7 +889,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   box-shadow: inset 0 -12px 0 #596d7e99;
 }
 .reward-opening.is-open .gift-shutter {
-  animation: shutterOpen .62s ease-in forwards;
+  animation: shutterOpen .86s cubic-bezier(.5, 0, .16, 1) .18s forwards;
 }
 .gift-glow {
   position: absolute;
@@ -793,7 +903,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   box-shadow: 0 0 26px #ffe266;
 }
 .reward-opening.is-open .gift-glow {
-  animation: giftGlow .72s ease-out .22s forwards;
+  animation: giftGlow 1.15s ease-out .38s forwards;
 }
 .gift-base {
   position: absolute;
@@ -819,6 +929,33 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 }
 .gift-base::before { left: 10px; }
 .gift-base::after { right: 10px; }
+.gift-platform {
+  position: absolute;
+  z-index: 4;
+  bottom: 10px;
+  width: 94%;
+  height: 26px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(90deg, #12324f 0 18px, #ffd246 18px 34px),
+    linear-gradient(#365f82, #12324f);
+  border: 4px solid #0b3778;
+  box-shadow: 0 6px 0 #08295a;
+}
+.gift-platform span {
+  position: absolute;
+  top: 5px;
+  width: 44px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff8b0;
+  box-shadow: 0 0 10px #fff0a8;
+}
+.gift-platform span:first-child { left: 42px; }
+.gift-platform span:last-child { right: 42px; }
+.reward-opening.is-open .gift-platform span {
+  animation: platformLight 1s ease-in-out .35s both;
+}
 .reward-opening-copy {
   position: relative;
   z-index: 1;
@@ -873,6 +1010,9 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 }
 .reward-opening.is-open .reward-opening-button {
   visibility: hidden;
+}
+.reward-opening.is-open .reward-opening-title {
+  animation: titleCelebrate .7s ease-out .35s both;
 }
 .reward-screen {
   overflow: hidden;
@@ -1420,25 +1560,63 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   50% { transform: scale(1.08) rotate(12deg); opacity: 1; }
 }
 @keyframes rewardRays {
-  0% { opacity: 0; transform: scale(.45) rotate(0deg); }
-  100% { opacity: .58; transform: scale(1.12) rotate(16deg); }
+  0% { opacity: 0; transform: scale(.36) rotate(0deg); }
+  42% { opacity: .84; transform: scale(1.08) rotate(12deg); }
+  100% { opacity: .46; transform: scale(1.22) rotate(24deg); }
 }
 @keyframes rewardCardRise {
-  0% { opacity: 0; transform: translateY(92px) scale(.58) rotate(-3deg); }
-  45% { opacity: 1; transform: translateY(-24px) scale(1.04) rotate(1deg); }
-  100% { opacity: 1; transform: translateY(-8px) scale(1) rotate(0deg); }
+  0% { opacity: 0; transform: translateY(118px) scale(.54) rotate(-5deg); filter: drop-shadow(0 18px 0 #0a3b8566) brightness(1.2); }
+  48% { opacity: 1; transform: translateY(-38px) scale(1.08) rotate(2deg); filter: drop-shadow(0 14px 0 #0a3b8566) brightness(1.3); }
+  72% { transform: translateY(-18px) scale(.96) rotate(-1deg); }
+  100% { opacity: 1; transform: translateY(-14px) scale(1) rotate(0deg); filter: drop-shadow(0 12px 0 #0a3b8566) brightness(1); }
 }
 @keyframes shutterOpen {
-  0% { height: 108px; opacity: 1; }
-  100% { height: 18px; opacity: .86; }
+  0% { height: 108px; opacity: 1; transform: translateY(0); }
+  58% { height: 34px; opacity: 1; transform: translateY(-4px); }
+  100% { height: 16px; opacity: .82; transform: translateY(-8px); }
 }
 @keyframes giftGlow {
-  0% { opacity: 0; transform: scale(.65); }
-  100% { opacity: .92; transform: scale(1); }
+  0% { opacity: 0; transform: scale(.55); filter: blur(2px); }
+  44% { opacity: 1; transform: scale(1.04); filter: blur(0); }
+  100% { opacity: .86; transform: scale(1.16); filter: blur(.3px); }
 }
 @keyframes doneButtonIn {
   0% { transform: translateY(12px) scale(.94); }
   100% { transform: none; }
+}
+@keyframes confettiBurst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4) rotate(0deg); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.05) rotate(var(--r)); }
+}
+@keyframes stationLight {
+  0% { opacity: .38; transform: scale(.7); }
+  38% { opacity: 1; transform: scale(1.42); }
+  100% { opacity: .78; transform: scale(1); }
+}
+@keyframes stationSignPop {
+  0% { opacity: 0; transform: translateY(-16px) scale(.86); }
+  72% { opacity: 1; transform: translateY(4px) scale(1.06); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes platformLight {
+  0%, 100% { opacity: .72; transform: scaleX(1); }
+  45% { opacity: 1; transform: scaleX(1.25); }
+}
+@keyframes platformBeamLeft {
+  0% { opacity: 0; transform: translateX(-50%) rotate(-18deg) scaleX(.2); }
+  30% { opacity: .95; }
+  100% { opacity: 0; transform: translateX(-50%) rotate(-18deg) scaleX(1.1); }
+}
+@keyframes platformBeamRight {
+  0% { opacity: 0; transform: translateX(-50%) rotate(18deg) scaleX(.2); }
+  30% { opacity: .95; }
+  100% { opacity: 0; transform: translateX(-50%) rotate(18deg) scaleX(1.1); }
+}
+@keyframes titleCelebrate {
+  0% { transform: scale(1); }
+  48% { transform: scale(1.08) rotate(-1deg); }
+  100% { transform: scale(1); }
 }
 @container (max-width: 380px) {
   .screen { padding-left: 8px; padding-right: 8px; }
@@ -1577,6 +1755,90 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   .question-count {
     font-size: 15px;
     padding: 5px 15px;
+  }
+  .reward-opening {
+    grid-template-rows: 96px minmax(0, 1fr) 82px 68px;
+    gap: 6px;
+    padding: 14px 14px 18px;
+  }
+  .reward-opening-title small {
+    font-size: 16px;
+  }
+  .reward-opening-title strong {
+    font-size: 31px;
+  }
+  .reward-opening-rays {
+    width: 300px;
+    height: 300px;
+  }
+  .reward-opening-card {
+    width: min(84%, 250px);
+  }
+  .reward-opening-card img {
+    max-height: 210px;
+    border-radius: 18px;
+    border-width: 5px;
+  }
+  .reward-opening-card span {
+    font-size: 21px;
+    border-width: 3px;
+  }
+  .gift-station {
+    width: min(94%, 292px);
+    min-height: 226px;
+  }
+  .gift-station-sign {
+    min-width: 154px;
+    font-size: 17px;
+    border-width: 3px;
+  }
+  .gift-station-roof {
+    height: 60px;
+    border-width: 4px;
+  }
+  .gift-station-roof span {
+    top: 12px;
+    width: 45px;
+    height: 45px;
+    border-width: 4px;
+    font-size: 24px;
+  }
+  .gift-station-lights {
+    top: 66px;
+  }
+  .gift-shutter {
+    top: 70px;
+    height: 94px;
+    border-width: 4px;
+  }
+  .gift-glow {
+    bottom: 38px;
+    height: 126px;
+  }
+  .gift-base {
+    height: 148px;
+    border-width: 5px;
+  }
+  .gift-base::before,
+  .gift-base::after {
+    width: 32px;
+    height: 66px;
+  }
+  .gift-platform {
+    height: 23px;
+    border-width: 3px;
+  }
+  .reward-opening-copy strong {
+    font-size: 27px;
+  }
+  .reward-opening-copy span {
+    font-size: 21px;
+  }
+  .reward-opening-button,
+  .reward-opening-done {
+    min-height: 58px;
+    font-size: 26px;
+    border-width: 4px;
   }
   .reward {
     grid-template-rows: 184px 76px minmax(0, 1fr);

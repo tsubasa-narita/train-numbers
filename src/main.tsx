@@ -587,7 +587,7 @@ function RewardOpening({ reward, sound, onDone }: { reward: RewardUnlock; sound:
   const open = () => {
     ping('star', sound);
     setOpened(true);
-    window.setTimeout(() => setRevealed(true), 950);
+    window.setTimeout(() => setRevealed(true), 1650);
   };
 
   return (
@@ -599,15 +599,24 @@ function RewardOpening({ reward, sound, onDone }: { reward: RewardUnlock; sound:
       </div>
       <div className="reward-opening-stage">
         <div className="reward-opening-rays" aria-hidden="true" />
+        <div className="opening-confetti" aria-hidden="true">
+          {Array.from({ length: 16 }, (_, i) => <span key={i} />)}
+        </div>
         <div className="reward-opening-card" aria-hidden={!opened}>
           <img src={card.image} alt="" />
           <span>{card.title}</span>
         </div>
         <div className="gift-station" aria-hidden="true">
+          <div className="gift-station-sign">ごほうびえき</div>
           <div className="gift-station-roof"><span>★</span></div>
+          <div className="gift-station-lights"><i /><i /><i /></div>
           <div className="gift-shutter" />
           <div className="gift-glow" />
           <div className="gift-base" />
+          <div className="gift-platform">
+            <span />
+            <span />
+          </div>
         </div>
       </div>
       <div className="reward-opening-copy">
