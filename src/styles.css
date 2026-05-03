@@ -61,7 +61,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   min-width: 0;
   height: 100%;
   display: grid;
-  grid-template-rows: minmax(112px, 126px) repeat(4, minmax(76px, 94px));
+  grid-template-rows: minmax(96px, 114px) 42px repeat(4, minmax(66px, 82px));
   gap: 7px;
   padding: 0 10px;
   overflow: hidden;
@@ -114,6 +114,32 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   object-position: bottom center;
   filter: drop-shadow(0 3px 0 #0002);
   animation: wave 1.8s infinite ease-in-out;
+}
+.home-mode-switch {
+  width: min(100%, 324px);
+  justify-self: center;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: #0b56b9cc;
+  box-shadow: 0 4px 0 #0002;
+}
+.home-mode-switch button {
+  min-width: 0;
+  min-height: 28px;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+}
+.home-mode-switch button.active {
+  background: #ffe18f;
+  color: #0d47a1;
+  box-shadow: inset 0 0 0 2px #ffbd23;
 }
 .bubble p { margin: 0; color: #0d47a1; font-size: 18px; font-weight: 900; }
 .level-card {
@@ -233,6 +259,82 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #ff6d00; color: #fff; font-size: 32px; font-style: normal;
   position: relative;
   z-index: 1;
+}
+.find-home-panel {
+  grid-row: span 4;
+  width: min(100%, 324px);
+  min-height: 0;
+  justify-self: center;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.find-level-card {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 22px;
+  border: 4px solid #fff;
+  background: linear-gradient(#f0fbff, #c9f1ff);
+  color: #0d47a1;
+  box-shadow: inset 0 0 0 3px #1680e8, 0 5px 0 #0002;
+  position: relative;
+  overflow: hidden;
+}
+.find-level-card img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 3px solid #fff;
+  box-shadow: 0 3px 0 #0002;
+}
+.find-level-card span {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+.find-level-card strong {
+  color: #1265d9;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: .95;
+  -webkit-text-stroke: 1px #fff;
+}
+.find-level-card small {
+  color: #341900;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.find-level-card i {
+  position: absolute;
+  right: 14px;
+  bottom: 18px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ff6d00;
+  color: #fff;
+  border: 3px solid #fff;
+  font-size: 24px;
+  font-style: normal;
+}
+.find-home-panel p {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: #fffdf7e8;
+  color: #0d47a1;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 .mini { color: #07336d; background: #fff9; border-radius: 999px; padding: 8px 14px; text-align: center; font-weight: 900; }
 .quiz-nav {
@@ -357,6 +459,12 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   display: block;
   isolation: isolate;
 }
+.train-card:disabled {
+  cursor: default;
+}
+.train-card:disabled img {
+  filter: none;
+}
 .train-card-grid img {
   width: 100%;
   aspect-ratio: 3 / 4;
@@ -386,6 +494,9 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 }
 .train-card.is-selected::after {
   opacity: 1;
+}
+.assist-selectOnly .train-card.is-selected::after {
+  background: #174fb226;
 }
 .selection-badge {
   position: absolute;
@@ -559,6 +670,169 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 }
 .secondary { width: 78%; min-height: 62px; border-radius: 999px; background: #fff; color: #0d47a1; border: 3px solid #9fd7ff; font-weight: 900; }
 .question-count { width: fit-content; margin: 4px auto 0; background: #114aa8; color: #fff; padding: 5px 18px; border-radius: 999px; font-size: 17px; font-weight: 900; }
+.find-quiz {
+  display: grid;
+  gap: 7px;
+  padding-bottom: 8px;
+}
+.find-progress span {
+  font-size: 17px;
+}
+.find-question-card {
+  min-height: 92px;
+  margin-bottom: 0;
+}
+.find-question-card small {
+  color: #315ab2;
+  font-size: 16px;
+  font-weight: 900;
+}
+.find-scene-card {
+  padding: 5px;
+  border-radius: 24px;
+  border: 4px solid #fff;
+  background: linear-gradient(#dff5ff, #ffffff);
+  box-shadow: 0 4px 0 #0001;
+}
+.find-scene-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #dff5ff;
+}
+.find-scene-stage img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 45 / 31;
+  object-fit: cover;
+}
+.find-target {
+  position: absolute;
+  border-radius: 18px;
+  background: #ffffff05;
+  outline: 0;
+}
+.find-target.is-found {
+  background: #ffe36f38;
+  box-shadow: inset 0 0 0 4px #ffe36f, 0 0 0 3px #174fb2;
+}
+.find-target span {
+  position: absolute;
+  right: -8px;
+  top: -10px;
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: #ff6d00;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #0002;
+}
+.found-tray {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  align-items: center;
+  padding: 9px;
+  border-radius: 20px;
+  border: 4px solid #fff;
+  background: #eaf6ff;
+  box-shadow: 0 4px 0 #0001;
+}
+.found-tray p {
+  margin: 0;
+  color: #0d47a1;
+  font-size: 18px;
+  font-weight: 900;
+}
+.found-tray strong {
+  min-width: 72px;
+  padding: 3px 10px 5px;
+  border-radius: 999px;
+  background: #174fb2;
+  color: #fff;
+  text-align: center;
+  font-size: 20px;
+  line-height: 1;
+}
+.found-tray strong span {
+  color: #ffe36f;
+  font-size: 30px;
+  text-shadow: 0 2px #d66b00;
+}
+.found-slots {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+}
+.found-slots span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 2px dashed #9ed0ff;
+  background: #fff;
+  color: #0d47a1;
+  font-size: 15px;
+  font-weight: 900;
+}
+.found-slots span.filled {
+  border-style: solid;
+  border-color: #ffbd23;
+  background: #ffe18f;
+}
+.found-slots span.has-crop {
+  padding: 2px;
+  overflow: hidden;
+  background: #fff;
+}
+.found-thumb-crop {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  border-radius: 7px;
+}
+.found-thumb-crop img {
+  position: absolute;
+  max-width: none;
+  object-fit: fill;
+}
+.find-confirm {
+  width: 86%;
+  min-height: 64px;
+  margin: 2px auto;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(#ff9f2e, #ff6d00);
+  color: #fff;
+  border: 5px solid #fff;
+  box-shadow: 0 5px 0 #d13e00;
+  font-size: 25px;
+  font-weight: 900;
+  text-shadow: 0 2px #a73700;
+}
+.find-choice-grid {
+  margin: 3px 0;
+}
+.find-retry {
+  min-height: 56px;
+  font-size: 24px;
+  margin-top: 0;
+}
+.find-result .stamp-result small {
+  color: #315ab2;
+  font-size: 18px;
+  font-weight: 900;
+}
 .result, .practice { text-align: center; padding-top: 24px; }
 .result h2, .practice h1, .reward h1 { color: #fff; text-shadow: 0 3px #063e8b; font-size: 40px; margin: 8px 0; }
 .stamp-result {
@@ -1463,6 +1737,9 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
 .setting-options.three {
   grid-template-columns: repeat(3, 1fr);
 }
+.setting-options.assist-modes {
+  grid-template-columns: repeat(3, 1fr);
+}
 .setting-options.ranges {
   grid-template-columns: repeat(5, 1fr);
 }
@@ -1711,7 +1988,7 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
     padding: 4px 6px 8px;
   }
   .home {
-    grid-template-rows: minmax(104px, 118px) repeat(4, minmax(72px, 90px));
+    grid-template-rows: minmax(88px, 106px) 40px repeat(4, minmax(64px, 78px));
     gap: 6px;
     padding: 0 8px;
   }
@@ -1757,6 +2034,34 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
     width: 24px;
     height: 24px;
     font-size: 18px;
+  }
+  .home-mode-switch {
+    width: min(100%, 298px);
+  }
+  .home-mode-switch button {
+    min-height: 27px;
+    font-size: 14px;
+  }
+  .find-home-panel {
+    width: min(100%, 298px);
+    gap: 6px;
+  }
+  .find-level-card {
+    padding: 8px;
+    border-width: 3px;
+    border-radius: 19px;
+  }
+  .find-level-card strong {
+    font-size: 23px;
+  }
+  .find-level-card small,
+  .find-home-panel p {
+    font-size: 12px;
+  }
+  .find-level-card i {
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
   }
   .progress-stars {
     min-height: 32px;
@@ -1874,6 +2179,42 @@ button { font: inherit; border: 0; cursor: pointer; touch-action: manipulation; 
   .question-count {
     font-size: 15px;
     padding: 5px 15px;
+  }
+  .find-question-card {
+    min-height: 82px;
+  }
+  .find-question-card small {
+    font-size: 14px;
+  }
+  .find-scene-card {
+    padding: 4px;
+    border-radius: 20px;
+  }
+  .find-scene-stage {
+    border-radius: 16px;
+  }
+  .found-tray {
+    padding: 7px;
+    border-radius: 18px;
+    border-width: 3px;
+  }
+  .found-tray p {
+    font-size: 16px;
+  }
+  .found-tray strong {
+    min-width: 64px;
+    font-size: 18px;
+  }
+  .found-tray strong span {
+    font-size: 26px;
+  }
+  .found-slots {
+    gap: 4px;
+  }
+  .find-confirm {
+    min-height: 58px;
+    font-size: 22px;
+    border-width: 4px;
   }
   .reward-opening {
     grid-template-rows: 96px minmax(0, 1fr) 82px 68px;

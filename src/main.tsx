@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { FIND_TRAIN_SCENES, type FindTrainScene, type FindTrainTarget } from './data/findTrainScenes';
 import { QUIZ_TRAINS, type QuizTrain } from './data/quizTrains';
 import './styles.css';
 
@@ -8,6 +9,7 @@ type Mode = 'level1' | 'level2' | 'level3' | 'level4' | 'practice';
 type Pattern = 'trainCount';
 type TilePattern = 'fixed' | 'shuffle' | 'mixed';
 type QuestionRange = 'level' | '1-3' | '4-6' | '7-10' | '1-10';
+type CountAssistMode = 'off' | 'selectOnly' | 'selectWithNumbers';
 
 type Settings = {
   soundEnabled: boolean;
@@ -15,6 +17,7 @@ type Settings = {
   effectsEnabled: boolean;
   tilePattern: TilePattern;
   questionRange: QuestionRange;
+  countAssistMode: CountAssistMode;
 };
 
 type LevelKey = '1' | '2' | '3' | '4';
@@ -48,6 +51,16 @@ type QuizState = {
   status: 'answering' | 'correct' | 'incorrect' | 'done';
 };
 
+type FindQuizState = {
+  scenes: FindTrainScene[];
+  choices: number[][];
+  index: number;
+  missed: boolean[];
+  foundTargetIds: string[];
+  selected: number | null;
+  status: 'finding' | 'choosing' | 'correct' | 'incorrect' | 'done';
+};
+
 type RewardUnlock = {
   cardIndex: number;
   totalStars: number;
@@ -58,6 +71,13 @@ const HOME_BACKGROUND = `${import.meta.env.BASE_URL}images/ui/home-background.pn
 const CONDUCTOR_BOY = `${import.meta.env.BASE_URL}images/ui/conductor-boy-home.png`;
 const REWARD_GIFT = `${import.meta.env.BASE_URL}images/ui/reward-train-gift.png`;
 const trainImageUrl = (filename: string) => `${import.meta.env.BASE_URL}images/trains/${filename}`;
+const findImageUrl = (filename: string) => `${import.meta.env.BASE_URL}images/find/${filename}`;
+const findTargetCropStyle = (target: FindTrainTarget): React.CSSProperties => ({
+  width: `${10000 / target.w}%`,
+  height: `${10000 / target.h}%`,
+  left: `-${target.x * 100 / target.w}%`,
+  top: `-${target.y * 100 / target.h}%`,
+});
 const TRAIN_NAMES = QUIZ_TRAINS.map((train) => train.displayName);
 
 const TRAIN_TONES = ['yellow', 'green', 'blue', 'red', 'teal', 'orange', 'silver', 'purple'];
@@ -89,6 +109,7 @@ const DEFAULT_SETTINGS: Settings = {
   effectsEnabled: true,
   tilePattern: 'fixed',
   questionRange: 'level',
+  countAssistMode: 'selectWithNumbers',
 };
 
 function defaultProgress(): Progress {
@@ -130,6 +151,7 @@ function loadProgress(): Progress {
         effectsEnabled: parsed.settings?.effectsEnabled ?? legacySound,
         tilePattern: parsed.settings?.tilePattern ?? DEFAULT_SETTINGS.tilePattern,
         questionRange: parsed.settings?.questionRange ?? DEFAULT_SETTINGS.questionRange,
+        countAssistMode: parsed.settings?.countAssistMode ?? DEFAULT_SETTINGS.countAssistMode,
       },
     };
   } catch {
@@ -214,6 +236,11 @@ function pickNWithRepeats<T>(items: T[], count: number) {
   return selected;
 }
 
+function makeNumberChoices(correctNum: number, range: number[]) {
+  const wrongPool = range.filter((n) => n !== correctNum);
+  return shuffle([correctNum, ...shuffle(wrongPool).slice(0, 2)]);
+}
+
 function questionText() {
   return 'でんしゃは なんほん いる?';
 }
@@ -278,7 +305,18 @@ function completeSession(progress: Progress, quiz: QuizState): Progress {
   return next;
 }
 
-function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'resetStamps' } | { type: 'setStamps'; totalStars: number } | { type: 'finish'; quiz: QuizState }) {
+function completeFindSession(progress: Progress, missedCount: number): Progress {
+  const earnedRewardStars = missedCount === 0 ? 1 : 0;
+  const nextStars = progress.totalStars + earnedRewardStars;
+  return {
+    ...progress,
+    totalStars: nextStars,
+    unlockedTrainIds: unlockedIds(nextStars),
+    lastPlayedAt: new Date().toISOString(),
+  };
+}
+
+function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | { type: 'updateSettings'; settings: Partial<Settings> } | { type: 'resetStamps' } | { type: 'setStamps'; totalStars: number } | { type: 'finish'; quiz: QuizState } | { type: 'finishFind'; missedCount: number }) {
   if (action.type === 'toggleVoice') {
     const nextVoice = !progress.settings.voiceEnabled;
     return { ...progress, settings: { ...progress.settings, voiceEnabled: nextVoice, soundEnabled: nextVoice } };
@@ -294,6 +332,9 @@ function progressReducer(progress: Progress, action: { type: 'toggleVoice' } | {
     const totalStars = Math.max(0, Math.floor(action.totalStars));
     return { ...progress, totalStars, unlockedTrainIds: unlockedIds(totalStars), lastPlayedAt: new Date().toISOString() };
   }
+  if (action.type === 'finishFind') {
+    return completeFindSession(progress, action.missedCount);
+  }
   return completeSession(progress, action.quiz);
 }
 
@@ -301,9 +342,11 @@ function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [progress, dispatch] = useReducer(progressReducer, undefined, loadProgress);
   const [quiz, setQuiz] = useState<QuizState | null>(null);
+  const [findQuiz, setFindQuiz] = useState<FindQuizState | null>(null);
   const [pendingReward, setPendingReward] = useState<RewardUnlock | null>(null);
   const voice = progress.settings.voiceEnabled;
   const effects = progress.settings.effectsEnabled;
+  const activePrompt = findQuiz ? 'でんしゃを みつけて かぞえよう' : quiz?.questions[quiz.index]?.prompt;
 
   useEffect(() => saveProgress(progress), [progress]);
 
@@ -312,8 +355,19 @@ function App() {
     const questions = generateQuestions(mode, progress.settings);
     const nextQuiz = { mode, questions, index: 0, missed: Array.from({ length: questions.length }, () => false), selected: null, status: 'answering' as const };
     setQuiz(nextQuiz);
+    setFindQuiz(null);
     setTab(mode === 'practice' ? 'practice' : 'home');
     setTimeout(() => speak(nextQuiz.questions[0].prompt, voice), 150);
+  };
+
+  const startFindQuiz = () => {
+    ping('tap', effects);
+    const scenes = [...FIND_TRAIN_SCENES].sort((a, b) => a.correctNum - b.correctNum);
+    const choices = scenes.map((scene) => makeNumberChoices(scene.correctNum, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
+    setQuiz(null);
+    setFindQuiz({ scenes, choices, index: 0, missed: Array.from({ length: scenes.length }, () => false), foundTargetIds: [], selected: null, status: 'finding' });
+    setTab('home');
+    setTimeout(() => speak('みつけた でんしゃを タッチしてね', voice), 150);
   };
 
   const answer = (choice: number) => {
@@ -363,25 +417,95 @@ function App() {
     speak(quiz.questions[quiz.index].prompt, voice);
   };
 
+  const toggleFoundTrain = (targetId: string) => {
+    if (!findQuiz || !['finding', 'choosing'].includes(findQuiz.status)) return;
+    ping('tap', effects);
+    setFindQuiz({
+      ...findQuiz,
+      foundTargetIds: findQuiz.foundTargetIds.includes(targetId)
+        ? findQuiz.foundTargetIds.filter((id) => id !== targetId)
+        : [...findQuiz.foundTargetIds, targetId],
+      status: 'finding',
+      selected: null,
+    });
+  };
+
+  const chooseFindAnswer = (choice: number) => {
+    if (!findQuiz || findQuiz.status !== 'choosing') return;
+    const current = findQuiz.scenes[findQuiz.index];
+    if (choice === current.correctNum) {
+      ping('correct', effects);
+      speak(pick(['せいかい! よく みつけたね!', 'やったー! ぜんぶ かぞえたね!']), voice);
+      setFindQuiz({ ...findQuiz, selected: choice, status: 'correct' });
+      setTimeout(() => {
+        setFindQuiz((latest) => {
+          if (!latest) return latest;
+          if (latest.index === latest.scenes.length - 1) {
+            const done = { ...latest, status: 'done' as const };
+            const missedCount = done.missed.filter(Boolean).length;
+            const earnedRewardStamp = missedCount === 0;
+            const nextTotalStars = progress.totalStars + (earnedRewardStamp ? 1 : 0);
+            dispatch({ type: 'finishFind', missedCount });
+            if (earnedRewardStamp) {
+              ping('star', effects);
+              if (nextTotalStars > 0 && nextTotalStars % REWARD_CARD_SIZE === 0) {
+                const cardIndex = Math.min(REWARD_CARDS.length - 1, Math.floor(nextTotalStars / REWARD_CARD_SIZE) - 1);
+                window.setTimeout(() => setPendingReward({ cardIndex, totalStars: nextTotalStars }), 2000);
+              }
+            }
+            return done;
+          }
+          return { ...latest, index: latest.index + 1, foundTargetIds: [], selected: null, status: 'finding' as const };
+        });
+      }, 850);
+    } else {
+      ping('incorrect', effects);
+      speak('おしい! もういちど みてみよう!', voice);
+      const missed = [...findQuiz.missed];
+      missed[findQuiz.index] = true;
+      setFindQuiz({ ...findQuiz, missed, selected: choice, status: 'incorrect' });
+    }
+  };
+
+  const confirmFoundTrains = () => {
+    if (!findQuiz || !['finding', 'incorrect'].includes(findQuiz.status)) return;
+    ping('tap', effects);
+    setFindQuiz({ ...findQuiz, selected: null, status: 'choosing' });
+    speak('なんだい いたかな?', voice);
+  };
+
+  const retryFind = () => {
+    if (!findQuiz) return;
+    ping('tap', effects);
+    setFindQuiz({ ...findQuiz, selected: null, status: 'finding' });
+  };
+
   const goTab = (next: Tab) => {
     ping('tap', effects);
     setQuiz(null);
+    setFindQuiz(null);
     setTab(next);
   };
 
   return (
     <main className="shell">
-      <section className={`phone ${quiz ? 'is-quiz' : tab === 'home' ? 'is-home' : ''}`} style={{ '--home-bg': `url(${HOME_BACKGROUND})` } as React.CSSProperties} aria-label="れっしゃで かずあそび">
-        <Header onSpeak={() => quiz && speak(quiz.questions[quiz.index]?.prompt ?? 'れっしゃで かずあそび', voice)} />
-        <div className={`screen ${quiz ? 'quiz-screen' : `${tab}-screen`}`}>
-          {quiz ? (
+      <section className={`phone ${quiz || findQuiz ? 'is-quiz' : tab === 'home' ? 'is-home' : ''}`} style={{ '--home-bg': `url(${HOME_BACKGROUND})` } as React.CSSProperties} aria-label="れっしゃで かずあそび">
+        <Header onSpeak={() => speak(activePrompt ?? 'れっしゃで かずあそび', voice)} />
+        <div className={`screen ${quiz || findQuiz ? 'quiz-screen' : `${tab}-screen`}`}>
+          {findQuiz ? (
+            findQuiz.status === 'done' ? (
+              <FindResultScreen findQuiz={findQuiz} totalStars={progress.totalStars} sound={voice} onReplay={startFindQuiz} onHome={() => goTab('home')} />
+            ) : (
+              <FindTrainScreen findQuiz={findQuiz} onToggleTarget={toggleFoundTrain} onConfirm={confirmFoundTrains} onAnswer={chooseFindAnswer} onRetry={retryFind} onHome={() => goTab('home')} sound={voice} />
+            )
+          ) : quiz ? (
             quiz.status === 'done' ? (
               <ResultScreen quiz={quiz} totalStars={progress.totalStars} sound={voice} onReplay={() => startQuiz(quiz.mode)} onHome={() => goTab('home')} />
             ) : (
-              <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} onHome={() => goTab('home')} sound={voice} tilePattern={progress.settings.tilePattern} />
+              <QuizScreen quiz={quiz} onAnswer={answer} onRetry={retry} onHome={() => goTab('home')} sound={voice} tilePattern={progress.settings.tilePattern} countAssistMode={progress.settings.countAssistMode} />
             )
           ) : tab === 'home' ? (
-            <Home progress={progress} onStart={startQuiz} />
+            <Home progress={progress} onStart={startQuiz} onStartFind={startFindQuiz} />
           ) : tab === 'practice' ? (
             <Practice progress={progress} onStart={() => startQuiz('practice')} />
           ) : tab === 'settings' ? (
@@ -424,7 +548,8 @@ function Header({ onSpeak }: { onSpeak: () => void }) {
   );
 }
 
-function Home({ onStart }: { progress: Progress; onStart: (mode: Mode) => void }) {
+function Home({ onStart, onStartFind }: { progress: Progress; onStart: (mode: Mode) => void; onStartFind: () => void }) {
+  const [homeMode, setHomeMode] = useState<'count' | 'find'>('count');
   return (
     <div className="home">
       <div className="home-hero">
@@ -434,10 +559,30 @@ function Home({ onStart }: { progress: Progress; onStart: (mode: Mode) => void }
         </div>
         <img className="home-conductor" src={CONDUCTOR_BOY} alt="" aria-hidden="true" />
       </div>
-      <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} image="komachi.png" onClick={() => onStart('level1')} />
-      <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} image="yokosuka_e235_1000.png" onClick={() => onStart('level2')} />
-      <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} image="kagayaki_e7_w7.png" onClick={() => onStart('level3')} />
-      <LevelCard tone="purple" title="11〜20" subtitle="1もんだけ じっくり" nums={[11, 15, 20]} image="laview_001.png" onClick={() => onStart('level4')} />
+      <div className="home-mode-switch" role="tablist" aria-label="あそびかた">
+        <button className={homeMode === 'count' ? 'active' : ''} onClick={() => setHomeMode('count')} role="tab" aria-selected={homeMode === 'count'}>かぞえる</button>
+        <button className={homeMode === 'find' ? 'active' : ''} onClick={() => setHomeMode('find')} role="tab" aria-selected={homeMode === 'find'}>みつける</button>
+      </div>
+      {homeMode === 'count' ? (
+        <>
+          <LevelCard tone="yellow" title="1〜3" subtitle="はじめての かず" nums={[1, 2, 3]} image="komachi.png" onClick={() => onStart('level1')} />
+          <LevelCard tone="green" title="4〜6" subtitle="すこしずつ チャレンジ" nums={[4, 5, 6]} image="yokosuka_e235_1000.png" onClick={() => onStart('level2')} />
+          <LevelCard tone="blue" title="7〜10" subtitle="しっかり かぞえよう" nums={[7, 8, 9, 10]} image="kagayaki_e7_w7.png" onClick={() => onStart('level3')} />
+          <LevelCard tone="purple" title="11〜20" subtitle="1もんだけ じっくり" nums={[11, 15, 20]} image="laview_001.png" onClick={() => onStart('level4')} />
+        </>
+      ) : (
+        <div className="find-home-panel">
+          <button className="find-level-card" onClick={onStartFind}>
+            <img src={findImageUrl('find-yard-05.png')} alt="" />
+            <span>
+              <strong>みつける 1〜10</strong>
+              <small>しゃしんの なかの でんしゃを タッチ!</small>
+            </span>
+            <i>🔍</i>
+          </button>
+          <p>みつけた でんしゃを ぜんぶ タッチしてから、なんだい いたか こたえよう。</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -465,7 +610,7 @@ function ConductorBubble({ text }: { text: string }) {
   );
 }
 
-function QuizScreen({ quiz, onAnswer, onRetry, onHome, sound, tilePattern }: { quiz: QuizState; onAnswer: (choice: number) => void; onRetry: () => void; onHome: () => void; sound: boolean; tilePattern: TilePattern }) {
+function QuizScreen({ quiz, onAnswer, onRetry, onHome, sound, tilePattern, countAssistMode }: { quiz: QuizState; onAnswer: (choice: number) => void; onRetry: () => void; onHome: () => void; sound: boolean; tilePattern: TilePattern; countAssistMode: CountAssistMode }) {
   const q = quiz.questions[quiz.index];
   const isHardCourse = quiz.mode === 'level4';
   useEffect(() => speak(q.prompt, sound), [q.id, q.prompt, sound]);
@@ -485,7 +630,7 @@ function QuizScreen({ quiz, onAnswer, onRetry, onHome, sound, tilePattern }: { q
         <span>{modeLabel(quiz.mode)}</span>
         <strong>{q.prompt}</strong>
       </button>
-      <VisualQuestion question={q} tilePattern={tilePattern} />
+      <VisualQuestion question={q} tilePattern={tilePattern} countAssistMode={countAssistMode} />
       <div className="choice-grid">
         {q.choices.map((choice) => (
           <button key={choice} className={choiceClass(quiz, choice)} onClick={() => onAnswer(choice)}>
@@ -499,44 +644,151 @@ function QuizScreen({ quiz, onAnswer, onRetry, onHome, sound, tilePattern }: { q
   );
 }
 
-function VisualQuestion({ question, tilePattern }: { question: Question; tilePattern: TilePattern }) {
+function VisualQuestion({ question, tilePattern, countAssistMode }: { question: Question; tilePattern: TilePattern; countAssistMode: CountAssistMode }) {
   const [selectedTrainIds, setSelectedTrainIds] = useState<string[]>([]);
   const layoutClass = tilePattern === 'fixed' ? 'layout-fixed' : tilePattern === 'shuffle' ? 'layout-shuffle' : `layout-mixed layout-${(question.correctNum + question.id.length) % 3}`;
+  const canSelectTrains = countAssistMode !== 'off';
+  const showsCountHint = countAssistMode === 'selectWithNumbers';
   useEffect(() => setSelectedTrainIds([]), [question.id]);
 
   const toggleTrain = (trainId: string) => {
+    if (!canSelectTrains) return;
     setSelectedTrainIds((current) => (
       current.includes(trainId) ? current.filter((id) => id !== trainId) : [...current, trainId]
     ));
   };
 
   return (
-    <div className="visual photo-visual">
-      <div className="count-assist" aria-live="polite">
-        <span>{selectedTrainIds.length}</span> / {question.correctNum}
-      </div>
+    <div className={`visual photo-visual assist-${countAssistMode}`}>
+      {showsCountHint && (
+        <div className="count-assist" aria-live="polite">
+          <span>{selectedTrainIds.length}</span> / {question.correctNum}
+        </div>
+      )}
       <div className={`train-card-grid count-${question.correctNum} ${layoutClass}`} aria-label={`${question.correctNum}だいの でんしゃ`}>
         {question.trains.map((train, index) => {
           const selectionId = `${train.id}-${index}`;
           const selectedIndex = selectedTrainIds.indexOf(selectionId);
           const isSelected = selectedIndex >= 0;
+          const selectedLabel = showsCountHint ? `${selectedIndex + 1}番目` : '選択済み';
           return (
           <button
             key={`${question.id}-${selectionId}`}
             type="button"
             className={`train-card ${isSelected ? 'is-selected' : ''}`}
             onClick={() => toggleTrain(selectionId)}
+            disabled={!canSelectTrains}
             aria-pressed={isSelected}
-            aria-label={`${train.displayName} ${train.model} ${isSelected ? `${selectedIndex + 1}番目` : '未選択'}`}
+            aria-label={`${train.displayName} ${train.model} ${isSelected ? selectedLabel : '未選択'}`}
           >
             <img src={trainImageUrl(train.image)} alt="" title={`${train.displayName} ${train.model}`} />
-            {isSelected && (
+            {isSelected && showsCountHint && (
               <span className="selection-badge" aria-hidden="true">{circledNumber(selectedIndex + 1)}</span>
             )}
           </button>
         );
         })}
       </div>
+    </div>
+  );
+}
+
+function FindTrainScreen({ findQuiz, onToggleTarget, onConfirm, onAnswer, onRetry, onHome, sound }: { findQuiz: FindQuizState; onToggleTarget: (targetId: string) => void; onConfirm: () => void; onAnswer: (choice: number) => void; onRetry: () => void; onHome: () => void; sound: boolean }) {
+  const scene = findQuiz.scenes[findQuiz.index];
+  const choices = findQuiz.choices[findQuiz.index];
+  const canChoose = findQuiz.status === 'choosing' || findQuiz.status === 'correct' || findQuiz.status === 'incorrect';
+  const foundTargets = findQuiz.foundTargetIds
+    .map((id) => scene.trains.find((target) => target.id === id))
+    .filter((target): target is FindTrainTarget => Boolean(target));
+  useEffect(() => speak('でんしゃを みつけて タッチしてね', sound), [scene.id, sound]);
+  return (
+    <div className="find-quiz">
+      <div className="quiz-nav">
+        <button className="quiz-home-button" onClick={onHome} aria-label="ホームにもどる">
+          <span aria-hidden="true">🏠</span>
+          ホーム
+        </button>
+        <div className="progress-stars find-progress">
+          {findQuiz.scenes.map((_, i) => <span key={i} className={i < findQuiz.index ? 'filled' : i === findQuiz.index && !findQuiz.missed[i] ? 'filled' : ''}>★</span>)}
+        </div>
+      </div>
+      <button className="question-card find-question-card" onClick={() => speak('でんしゃは なんだい いるかな', sound)}>
+        <span>みつける 1〜10</span>
+        <strong>でんしゃは なんだい いる?</strong>
+        <small>みつけた でんしゃを タッチしてね</small>
+      </button>
+      <div className="find-scene-card">
+        <div className="find-scene-stage">
+          <img src={findImageUrl(scene.image)} alt="" />
+          {scene.trains.map((target) => {
+            const foundIndex = findQuiz.foundTargetIds.indexOf(target.id);
+            const isFound = foundIndex >= 0;
+            return (
+              <button
+                key={target.id}
+                className={`find-target ${isFound ? 'is-found' : ''}`}
+                style={{ left: `${target.x}%`, top: `${target.y}%`, width: `${target.w}%`, height: `${target.h}%` }}
+                onClick={() => onToggleTarget(target.id)}
+                aria-pressed={isFound}
+                aria-label={`${target.label} ${isFound ? 'みつけた' : 'まだ'}`}
+              >
+                {isFound && <span>{foundIndex + 1}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="found-tray">
+        <p>みつけた でんしゃ</p>
+        <strong><span>{findQuiz.foundTargetIds.length}</span> / {scene.correctNum}</strong>
+        <div className="found-slots" aria-hidden="true">
+          {Array.from({ length: Math.min(scene.correctNum, 10) }, (_, i) => {
+            const target = foundTargets[i];
+            return (
+              <span key={i} className={target ? 'filled has-crop' : ''}>
+                {target && (
+                  <span className="found-thumb-crop">
+                    <img src={findImageUrl(scene.image)} alt="" style={findTargetCropStyle(target)} />
+                  </span>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+      {canChoose ? (
+        <div className="choice-grid find-choice-grid">
+          {choices.map((choice) => (
+            <button key={choice} className={findChoiceClass(findQuiz, choice)} onClick={() => onAnswer(choice)}>
+              {choice}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button className="find-confirm" onClick={onConfirm}>ぜんぶ みつけたよ!</button>
+      )}
+      {findQuiz.status === 'incorrect' && <button className="retry find-retry" onClick={onRetry}>もういちど さがす</button>}
+      <div className="question-count">🚩 もんだい {findQuiz.index + 1} / {findQuiz.scenes.length}</div>
+    </div>
+  );
+}
+
+function FindResultScreen({ findQuiz, totalStars, sound, onReplay, onHome }: { findQuiz: FindQuizState; totalStars: number; sound: boolean; onReplay: () => void; onHome: () => void }) {
+  const missed = findQuiz.missed.filter(Boolean).length;
+  const earnedStamp = missed === 0;
+  const line = earnedStamp ? 'ぜんぶ みつけたね! スタンプ ゲット!' : 'よく みつけたね! もういちど あそぼう!';
+  useEffect(() => speak(line, sound), [line, sound]);
+  return (
+    <div className="result find-result">
+      <ConductorBubble text={line} />
+      <h2>みつけた!</h2>
+      <div className={`stamp-result ${earnedStamp ? 'earned' : 'missed'}`}>
+        <p className="stamp-card-status">みつけるモード</p>
+        <strong>{earnedStamp ? 'パーフェクト!' : `${findQuiz.scenes.length - missed} / ${findQuiz.scenes.length} せいかい`}</strong>
+        <small>いまのスタンプ: {totalStars}</small>
+      </div>
+      <button className="primary" onClick={onReplay}>もういちど みつける</button>
+      <button className="secondary" onClick={onHome}>ホームに もどる</button>
     </div>
   );
 }
@@ -762,6 +1014,11 @@ function SettingsPanel({ settings, totalStars, onChange, onResetStamps, onSetSta
     { value: '7-10', label: '7〜10' },
     { value: '1-10', label: '1〜10' },
   ];
+  const countAssistOptions: { value: CountAssistMode; label: string; hint: string }[] = [
+    { value: 'off', label: 'ヒントなし', hint: 'タッチしても かわらない' },
+    { value: 'selectOnly', label: 'えらぶだけ', hint: '色だけつく' },
+    { value: 'selectWithNumbers', label: 'ばんごうつき', hint: 'いままでと同じ' },
+  ];
   const confirmResetStamps = () => {
     if (window.confirm('ごほうびカードのスタンプを ぜんぶ けします。よろしいですか?')) {
       onResetStamps();
@@ -787,6 +1044,17 @@ function SettingsPanel({ settings, totalStars, onChange, onResetStamps, onSetSta
           {rangeOptions.map((option) => (
             <button key={option.value} className={settings.questionRange === option.value ? 'selected' : ''} onClick={() => onChange({ questionRange: option.value })}>
               {option.label}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="setting-group">
+        <h2>かぞえる ヒント</h2>
+        <div className="setting-options assist-modes">
+          {countAssistOptions.map((option) => (
+            <button key={option.value} className={settings.countAssistMode === option.value ? 'selected' : ''} onClick={() => onChange({ countAssistMode: option.value })}>
+              <strong>{option.label}</strong>
+              <small>{option.hint}</small>
             </button>
           ))}
         </div>
@@ -860,6 +1128,13 @@ function choiceClass(quiz: QuizState, choice: number) {
   const base = 'choice';
   if (quiz.selected !== choice) return base;
   return `${base} ${choice === q.correctNum ? 'right' : 'wrong'}`;
+}
+
+function findChoiceClass(findQuiz: FindQuizState, choice: number) {
+  const scene = findQuiz.scenes[findQuiz.index];
+  const base = 'choice';
+  if (findQuiz.selected !== choice) return base;
+  return `${base} ${choice === scene.correctNum ? 'right' : 'wrong'}`;
 }
 
 createRoot(document.getElementById('root')!).render(<App />);
